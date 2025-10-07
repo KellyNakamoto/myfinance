@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 Личные Финансы - Smart Budget</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <!-- Toast уведомления -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <div class="app-container">
+        <!-- Заголовок приложения -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <span class="header-icon">💰</span>
+                    <div>
+                        <h1>Личные Финансы</h1>
+                        <p class="header-subtitle">Smart Budget с ИИ-аналитикой</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="current-period" id="currentPeriod">Октябрь 2025</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Навигация по вкладкам -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" data-tab="overview">
+                <span class="tab-icon">📊</span>
+                <span>Обзор</span>
+            </button>
+            <button class="tab-btn" data-tab="income">
+                <span class="tab-icon">💵</span>
+                <span>Доходы</span>
+            </button>
+            <button class="tab-btn" data-tab="expenses">
+                <span class="tab-icon">💸</span>
+                <span>Расходы</span>
+            </button>
+            <button class="tab-btn" data-tab="planning">
+                <span class="tab-icon">📅</span>
+                <span>Планирование</span>
+            </button>
+            <button class="tab-btn" data-tab="analytics">
+                <span class="tab-icon">📈</span>
+                <span>Аналитика</span>
+                <span class="tab-badge">AI</span>
+            </button>
+            <button class="tab-btn" data-tab="archive">
+                <span class="tab-icon">📁</span>
+                <span>Архив</span>
+            </button>
+        </nav>
+
+        <!-- Основной контент -->
+        <main class="main-content">
+            <!-- Вкладка Обзор -->
+            <div class="tab-content active" id="overview">
+                <div class="overview-grid">
+                    <!-- Key Metrics -->
+                    <section class="card metrics-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">📋</span>
+                                Ключевые показатели
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="metrics-grid">
+                                <div class="metric-item positive">
+                                    <div class="metric-label">Общий доход</div>
+                                    <div class="metric-value" id="totalIncome">135 000 ₽</div>
+                                    <div class="metric-change">+8.0%</div>
+                                </div>
+                                <div class="metric-item negative">
+                                    <div class="metric-label">Расходы</div>
+                                    <div class="metric-value" id="totalSpent">61 200 ₽</div>
+                                    <div class="metric-change">+3.2%</div>
+                                </div>
+                                <div class="metric-item success">
+                                    <div class="metric-label">Сбережения</div>
+                                    <div class="metric-value" id="totalSavings">27 000 ₽</div>
+                                    <div class="metric-change">20%</div>
+                                </div>
+                                <div class="metric-item primary">
+                                    <div class="metric-label">Остаток</div>
+                                    <div class="metric-value" id="remainingBudget">46 800 ₽</div>
+                                    <div class="metric-change">до конца месяца</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Дневной бюджет -->
+                    <section class="card budget-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">🎯</span>
+                                Дневной бюджет
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="daily-budget-display">
+                                <div class="budget-amount" id="dailyBudget">1 550 ₽</div>
+                                <div class="budget-info">на день</div>
+                            </div>
+                            <div class="budget-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="todayProgress" style="width: 60%"></div>
+                                </div>
+                                <div class="progress-info">
+                                    <span>Потрачено сегодня: <strong id="todaySpent">930 ₽</strong></span>
+                                    <span>Осталось: <strong id="todayRemaining">620 ₽</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Прогноз -->
+                    <section class="card prediction-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">🔮</span>
+                                AI Прогноз
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="prediction-item">
+                                <div class="prediction-label">Прогноз трат на конец месяца</div>
+                                <div class="prediction-value">58 000 ₽</div>
+                                <div class="confidence">Уверенность: 85%</div>
+                            </div>
+                            <div class="prediction-recommendation">
+                                <div class="recommendation-icon">💡</div>
+                                <div class="recommendation-text">
+                                    Рекомендуемый дневной бюджет: <strong>1 650 ₽</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Вкладка Доходы -->
+            <div class="tab-content" id="income">
+                <section class="card">
+                    <div class="card-header">
+                        <h2>
+                            <span class="card-icon">💵</span>
+                            Управление доходами
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="income-list" id="incomeList"></div>
+                        <div class="add-form">
+                            <div class="form-grid">
+                                <input type="text" placeholder="Источник дохода..." id="incomeTitle" class="form-control">
+                                <input type="number" placeholder="Сумма" id="incomeAmount" class="form-control">
+                                <select id="incomeCategory" class="form-control">
+                                    <option value="work">Работа</option>
+                                    <option value="freelance">Подработка</option>
+                                    <option value="investment">Инвестиции</option>
+                                    <option value="other">Прочее</option>
+                                </select>
+                            </div>
+                            <button class="btn btn--primary" onclick="addIncome()">
+                                <span>+</span>
+                                Добавить доход
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Вкладка Расходы -->
+            <div class="tab-content" id="expenses">
+                <div class="expenses-grid">
+                    <!-- Обязательные расходы -->
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">🏠</span>
+                                Обязательные расходы
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="expense-list" id="fixedExpensesList"></div>
+                            <div class="add-form">
+                                <div class="form-grid">
+                                    <input type="text" placeholder="Категория расхода..." id="expenseTitle" class="form-control">
+                                    <input type="number" placeholder="Сумма" id="expenseAmount" class="form-control">
+                                </div>
+                                <button class="btn btn--primary" onclick="addFixedExpense()">
+                                    <span>+</span>
+                                    Добавить расход
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Ежедневные траты -->
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">📝</span>
+                                Ежедневные траты
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="daily-expenses" id="dailyExpensesList"></div>
+                            <div class="add-form">
+                                <div class="form-grid">
+                                    <input type="number" placeholder="Сумма" id="dailyAmount" class="form-control">
+                                    <input type="text" placeholder="Описание..." id="dailyDescription" class="form-control">
+                                    <select id="dailyCategory" class="form-control">
+                                        <option value="food">🍽️ Еда</option>
+                                        <option value="transport">🚗 Транспорт</option>
+                                        <option value="entertainment">🎬 Развлечения</option>
+                                        <option value="shopping">🛍️ Покупки</option>
+                                        <option value="health">⚕️ Здоровье</option>
+                                        <option value="other">📋 Прочее</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn--primary" onclick="addDailyExpense()">
+                                    <span>+</span>
+                                    Добавить трату
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Вкладка Планирование -->
+            <div class="tab-content" id="planning">
+                <div class="planning-grid">
+                    <!-- Период планирования -->
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">📅</span>
+                                Период планирования
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="quick-periods">
+                                <button class="btn btn--secondary" onclick="setQuickPeriod('current')">Этот месяц</button>
+                                <button class="btn btn--secondary" onclick="setQuickPeriod('next')">Следующий месяц</button>
+                                <button class="btn btn--secondary" onclick="setQuickPeriod('three')">3 месяца</button>
+                            </div>
+                            <div class="date-inputs">
+                                <div class="form-group">
+                                    <label class="form-label">Начальная дата</label>
+                                    <input type="date" id="startDate" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Конечная дата</label>
+                                    <input type="date" id="endDate" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Цели и сбережения -->
+                    <section class="card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">🎯</span>
+                                Цели и сбережения
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Процент сбережений</label>
+                                <select id="savingsPercentage" class="form-control" onchange="updateCalculations()">
+                                    <option value="0">0% - Не откладывать</option>
+                                    <option value="10">10% от дохода</option>
+                                    <option value="20" selected>20% от дохода</option>
+                                    <option value="30">30% от дохода</option>
+                                </select>
+                            </div>
+                            <div class="savings-progress">
+                                <div class="progress-item">
+                                    <div class="progress-label">Цель сбережений на месяц</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="savingsProgress" style="width: 65%"></div>
+                                    </div>
+                                    <div class="progress-text">17 500 ₽ из 27 000 ₽</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Calendar Heatmap -->
+                    <section class="card calendar-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">🗓️</span>
+                                Календарь активности
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="calendar-heatmap" id="calendarHeatmap"></div>
+                            <div class="heatmap-legend">
+                                <span>Меньше</span>
+                                <div class="legend-colors">
+                                    <div class="legend-color" data-level="0"></div>
+                                    <div class="legend-color" data-level="1"></div>
+                                    <div class="legend-color" data-level="2"></div>
+                                    <div class="legend-color" data-level="3"></div>
+                                    <div class="legend-color" data-level="4"></div>
+                                </div>
+                                <span>Больше</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Вкладка Аналитика -->
+            <div class="tab-content" id="analytics">
+                <div class="analytics-grid">
+                    <!-- Тренды -->
+                    <section class="card chart-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">📈</span>
+                                Тренды расходов
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container" style="position: relative; height: 300px;">
+                                <canvas id="trendsChart"></canvas>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Категории -->
+                    <section class="card chart-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">🥧</span>
+                                Расходы по категориям
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container" style="position: relative; height: 300px;">
+                                <canvas id="categoriesChart"></canvas>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Сравнение месяцев -->
+                    <section class="card comparison-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">⚖️</span>
+                                Сравнение с прошлым месяцем
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="comparison-grid">
+                                <div class="comparison-item">
+                                    <div class="comparison-label">Общие расходы</div>
+                                    <div class="comparison-values">
+                                        <span class="current">61 200 ₽</span>
+                                        <span class="change positive">↓ 3 200 ₽</span>
+                                        <span class="previous">64 400 ₽</span>
+                                    </div>
+                                </div>
+                                <div class="comparison-item">
+                                    <div class="comparison-label">Еда</div>
+                                    <div class="comparison-values">
+                                        <span class="current">18 500 ₽</span>
+                                        <span class="change negative">↑ 1 700 ₽</span>
+                                        <span class="previous">16 800 ₽</span>
+                                    </div>
+                                </div>
+                                <div class="comparison-item">
+                                    <div class="comparison-label">Транспорт</div>
+                                    <div class="comparison-values">
+                                        <span class="current">8 200 ₽</span>
+                                        <span class="change positive">↓ 700 ₽</span>
+                                        <span class="previous">7 500 ₽</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Паттерны и инсайты -->
+                    <section class="card insights-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">🧠</span>
+                                AI Инсайты и паттерны
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="insights-list">
+                                <div class="insight-item">
+                                    <div class="insight-icon">📊</div>
+                                    <div class="insight-content">
+                                        <div class="insight-title">Паттерн выходных</div>
+                                        <div class="insight-text">В выходные вы тратите на 50% больше (1 800 ₽ vs 1 200 ₽)</div>
+                                    </div>
+                                </div>
+                                <div class="insight-item">
+                                    <div class="insight-icon">⚠️</div>
+                                    <div class="insight-content">
+                                        <div class="insight-title">Аномалия</div>
+                                        <div class="insight-text">3 октября: необычно высокие траты на покупки (1 500 ₽)</div>
+                                    </div>
+                                </div>
+                                <div class="insight-item">
+                                    <div class="insight-icon">🔄</div>
+                                    <div class="insight-content">
+                                        <div class="insight-title">Регулярные траты</div>
+                                        <div class="insight-text">Утренний кофе (200 ₽ ежедневно), продукты (2 500 ₽ еженедельно)</div>
+                                    </div>
+                                </div>
+                                <div class="insight-item">
+                                    <div class="insight-icon">💡</div>
+                                    <div class="insight-content">
+                                        <div class="insight-title">Рекомендация</div>
+                                        <div class="insight-text">Сократите траты на развлечения на 15% для достижения цели сбережений</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Progress Bars -->
+                    <section class="card progress-card">
+                        <div class="card-header">
+                            <h2>
+                                <span class="card-icon">📊</span>
+                                Прогресс по категориям
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="category-progress">
+                                <div class="progress-item">
+                                    <div class="progress-header">
+                                        <span>🍽️ Еда</span>
+                                        <span>18 500 ₽ / 20 000 ₽</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill success" style="width: 92.5%"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item">
+                                    <div class="progress-header">
+                                        <span>🚗 Транспорт</span>
+                                        <span>8 200 ₽ / 8 000 ₽</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill warning" style="width: 102.5%"></div>
+                                    </div>
+                                </div>
+                                <div class="progress-item">
+                                    <div class="progress-header">
+                                        <span>🎬 Развлечения</span>
+                                        <span>5 500 ₽ / 7 000 ₽</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill primary" style="width: 78.6%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Вкладка Архив -->
+            <div class="tab-content" id="archive">
+                <section class="card">
+                    <div class="card-header">
+                        <h2>
+                            <span class="card-icon">📁</span>
+                            История периодов
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="archive-list" id="archiveList"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модальное окно для редактирования трат -->
+    <div class="modal hidden" id="expenseModal">
+        <div class="modal-backdrop" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Редактировать трату</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editExpenseId">
+                <div class="form-group">
+                    <label class="form-label">Сумма</label>
+                    <input type="number" id="editAmount" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Описание</label>
+                    <input type="text" id="editDescription" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Категория</label>
+                    <select id="editCategory" class="form-control">
+                        <option value="food">🍽️ Еда</option>
+                        <option value="transport">🚗 Транспорт</option>
+                        <option value="entertainment">🎬 Развлечения</option>
+                        <option value="shopping">🛍️ Покупки</option>
+                        <option value="health">⚕️ Здоровье</option>
+                        <option value="other">📋 Прочее</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--outline" onclick="closeModal()">Отмена</button>
+                <button class="btn btn--primary" onclick="saveExpenseEdit()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
