@@ -1,333 +1,87 @@
 // ==========================================
 // TELEGRAM MINI APP INTEGRATION
 // ==========================================
-// Инициализация Telegram Web App
 let tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
-// Применяем цветовую схему Telegram
 document.documentElement.setAttribute('data-theme', tg.colorScheme);
 
-// Отслеживаем изменение темы в Telegram
 tg.onEvent('themeChanged', function() {
     document.documentElement.setAttribute('data-theme', tg.colorScheme);
 });
 
 // ==========================================
-// ПРОВЕРКА ВЕРСИИ И ПОДДЕРЖКИ CLOUDSTORAGE
+// ДАННЫЕ ПО УМОЛЧАНИЮ
 // ==========================================
-
-console.log('Telegram WebApp version:', tg.version);
-console.log('CloudStorage available:', typeof tg.CloudStorage !== 'undefined');
-
-// Для CloudStorage нужна версия 6.9+
-const isCloudStorageSupported = tg.CloudStorage && typeof tg.CloudStorage.setItem === 'function';
-
-// ==========================================
-// СОХРАНЕНИЕ ДАННЫХ (HYBRID APPROACH)
-// ==========================================
-
-// Гибридный подход: CloudStorage + localStorage как fallback
-async function saveToTelegramCloud(data) {
-    const dataString = JSON.stringify(data);
-    let cloudSaved = false;
-    
-    // Пытаемся сохранить в Telegram CloudStorage
-    if (isCloudStorageSupported) {
-        try {
-            await new Promise((resolve, reject) => {
-                tg.CloudStorage.setItem('financeAppData', dataString, (error, result) => {
-                    if (error) {
-                        console.error('CloudStorage setItem error:', error);
-                        reject(error);
-                    } else {
-                        console.log('✅ Данные сохранены в Telegram CloudStorage');
-                        resolve(result);
-                    }
-                });
-            });
-            cloudSaved = true;
-        } catch (error) {
-            console.error('❌ Ошибка CloudStorage:', error);
-        }
-    } else {
-        console.warn('⚠️ CloudStorage не поддерживается (требуется Telegram v6.9+)');
-    }
-    
-    // ОБЯЗАТЕЛЬНО сохраняем в localStorage как резервную копию
-    try {
-        localStorage.setItem('financeAppData', dataString);
-        localStorage.setItem('financeAppData_timestamp', Date.now().toString());
-        console.log('✅ Данные сохранены в localStorage (backup)');
-    } catch (e) {
-        console.error('❌ Ошибка localStorage:', e);
-    }
-    
-    return cloudSaved;
-}
-
-// Функция для загрузки данных
-async function loadFromTelegramCloud() {
-    let cloudData = null;
-    let localData = null;
-    
-    // Пытаемся загрузить из CloudStorage
-    if (isCloudStorageSupported) {
-        try {
-            const dataString = await new Promise((resolve, reject) => {
-                tg.CloudStorage.getItem('financeAppData', (error, result) => {
-                    if (error) {
-                        console.error('CloudStorage getItem error:', error);
-                        reject(error);
-                    } else {
-                        resolve(result);
-                    }
-                });
-            });
-            
-            if (dataString && dataString.length > 0) {
-                cloudData = JSON.parse(dataString);
-                console.log('✅ Данные загружены из CloudStorage');
-            }
-        } catch (error) {
-            console.error('❌ Ошибка загрузки из CloudStorage:', error);
-        }
-    }
-    
-    // Загружаем из localStorage
-    try {
-        const localDataString = localStorage.getItem('financeAppData');
-        const timestamp = localStorage.getItem('financeAppData_timestamp');
-        
-        if (localDataString) {
-            localData = JSON.parse(localDataString);
-            console.log('✅ Данные загружены из localStorage');
-            console.log('📅 Время последнего сохранения:', timestamp ? new Date(parseInt(timestamp)).toLocaleString('ru-RU') : 'неизвестно');
-        }
-    } catch (error) {
-        console.error('❌ Ошибка загрузки из localStorage:', error);
-    }
-    
-    // Возвращаем наиболее свежие данные
-    if (cloudData && localData) {
-        // Если есть оба источника, выбираем более свежий
-        const cloudTimestamp = cloudData.lastModified || 0;
-        const localTimestamp = parseInt(localStorage.getItem('financeAppData_timestamp')) || 0;
-        
-        if (cloudTimestamp > localTimestamp) {
-            console.log('🔄 Используем данные из CloudStorage (более свежие)');
-            return cloudData;
-        } else {
-            console.log('🔄 Используем данные из localStorage (более свежие)');
-            return localData;
-        }
-    }
-    
-    return cloudData || localData || null;
-}
-
-// Автосохранение при любых изменениях данных
-let saveTimeout;
-function autoSave() {
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(async () => {
-        if (appData) {
-            appData.lastModified = Date.now();
-            await saveToTelegramCloud(appData);
-            console.log('💾 Автосохранение выполнено');
-        }
-    }, 500); // Сохраняем через 0.5 секунды
-}
-
-// Принудительное сохранение (вызываем при закрытии)
-async function forceSave() {
-    if (appData) {
-        appData.lastModified = Date.now();
-        await saveToTelegramCloud(appData);
-        console.log('💾 Принудительное сохранение выполнено');
-    }
-}
-
-// Отслеживание изменений массивов для автосохранения
-function makeArrayObservable(arr) {
-    const methods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
-    methods.forEach(method => {
-        const original = arr[method];
-        if (typeof original === 'function') {
-            arr[method] = function(...args) {
-                const result = original.apply(this, args);
-                autoSave();
-                return result;
-            };
-        }
-    });
-    return arr;
-}
+let appData = {
+    currentPeriod: {
+        id: "2025_10",
+        title: "Октябрь 2025",
+        startDate: "2025-10-01",
+        endDate: "2025-10-31",
+        incomes: [],
+        fixedExpenses: [],
+        savingsPercentage: 20,
+        dailyExpenses: []
+    },
+    historicalData: [],
+    categories: [
+        {id: "food", name: "Еда", icon: "🍽️", color: "#FF6B35"},
+        {id: "transport", name: "Транспорт", icon: "🚗", color: "#4ECDC4"},
+        {id: "entertainment", name: "Развлечения", icon: "🎬", color: "#45B7D1"},
+        {id: "shopping", name: "Покупки", icon: "🛍️", color: "#F39C12"},
+        {id: "housing", name: "Жилье", icon: "🏠", color: "#E74C3C"},
+        {id: "utilities", name: "Коммунальные", icon: "📡", color: "#9B59B6"},
+        {id: "health", name: "Здоровье", icon: "⚕️", color: "#27AE60"},
+        {id: "other", name: "Прочее", icon: "📋", color: "#95A5A6"}
+    ]
+};
 
 // ==========================================
-// СТРУКТУРА ДАННЫХ ПО УМОЛЧАНИЮ
+// ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ
 // ==========================================
-
-function getDefaultAppData() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
-                        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен, инициализация приложения');
     
-    return {
-        currentPeriod: {
-            id: `${year}_${month}`,
-            title: `${monthNames[now.getMonth()]} ${year}`,
-            startDate: `${year}-${month}-01`,
-            endDate: `${year}-${month}-${new Date(year, now.getMonth() + 1, 0).getDate()}`,
-            incomes: [],
-            fixedExpenses: [],
-            savingsPercentage: 20,
-            dailyExpenses: []
-        },
-        historicalData: [],
-        categories: [
-            {id: "food", name: "Еда", icon: "🍽️", color: "#FF6B35", keywords: ["кафе", "ресторан", "продукты", "еда", "обед", "завтрак", "ужин"]},
-            {id: "transport", name: "Транспорт", icon: "🚗", color: "#4ECDC4", keywords: ["такси", "автобус", "метро", "бензин", "парковка"]},
-            {id: "entertainment", name: "Развлечения", icon: "🎬", color: "#45B7D1", keywords: ["кино", "концерт", "игры", "развлечения"]},
-            {id: "shopping", name: "Покупки", icon: "🛍️", color: "#F39C12", keywords: ["одежда", "обувь", "техника", "покупки"]},
-            {id: "housing", name: "Жилье", icon: "🏠", color: "#E74C3C", keywords: ["квартира", "аренда", "коммунальные"]},
-            {id: "utilities", name: "Коммунальные", icon: "📡", color: "#9B59B6", keywords: ["интернет", "телефон", "электричество"]},
-            {id: "health", name: "Здоровье", icon: "⚕️", color: "#27AE60", keywords: ["врач", "лекарства", "аптека"]},
-            {id: "other", name: "Прочее", icon: "📋", color: "#95A5A6", keywords: []}
-        ],
-        predictions: {
-            endOfMonthSpending: 0,
-            confidenceLevel: 0,
-            recommendedDailyBudget: 0,
-            trendDirection: "stable",
-            anomalies: []
-        },
-        patterns: {
-            weekdayVsWeekend: {weekday: 0, weekend: 0},
-            regularExpenses: [],
-            seasonalTrends: {
-                highest_month: "",
-                lowest_month: ""
-            }
-        },
-        lastModified: Date.now()
-    };
-}
-
-// ==========================================
-// ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
-// ==========================================
-
-let appData = null;
-let isInitialized = false;
-
-// Асинхронная инициализация с загрузкой данных
-(async function initializeApp() {
-    console.log('🚀 Начало инициализации приложения...');
+    // Загружаем данные
+    loadData();
     
-    try {
-        // Показываем индикатор загрузки
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'block';
-        }
-        
-        // Загружаем данные из хранилища
-        const savedData = await loadFromTelegramCloud();
-        
-        if (savedData) {
-            console.log('✅ Восстановлены сохраненные данные');
-            appData = savedData;
-        } else {
-            console.log('📝 Создаем новые данные по умолчанию');
-            appData = getDefaultAppData();
-            // Сохраняем начальные данные
-            await saveToTelegramCloud(appData);
-        }
-        
-        // Применяем отслеживание изменений к массивам
-        if (appData && appData.currentPeriod) {
-            appData.currentPeriod.incomes = makeArrayObservable(appData.currentPeriod.incomes || []);
-            appData.currentPeriod.fixedExpenses = makeArrayObservable(appData.currentPeriod.fixedExpenses || []);
-            appData.currentPeriod.dailyExpenses = makeArrayObservable(appData.currentPeriod.dailyExpenses || []);
-        }
-        
-        if (appData.historicalData) {
-            appData.historicalData = makeArrayObservable(appData.historicalData);
-        }
-        
-        // Ждём загрузки DOM
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startApp);
-        } else {
-            startApp();
-        }
-        
-    } catch (error) {
-        console.error('❌ Критическая ошибка инициализации:', error);
-        appData = getDefaultAppData();
-        showToast('Ошибка загрузки данных. Созданы данные по умолчанию.', 'warning');
-        
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startApp);
-        } else {
-            startApp();
-        }
-    }
-})();
-
-function startApp() {
-    if (isInitialized) return;
-    isInitialized = true;
-    
-    console.log('🎯 Запуск интерфейса приложения');
-    
-    // Скрываем индикатор загрузки
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    if (loadingIndicator) {
-        loadingIndicator.style.display = 'none';
-    }
-    
+    // Инициализируем интерфейс
     initializeTabs();
     loadInitialData();
     updateAllCalculations();
-    initializeCharts();
-    initializeCalendarHeatmap();
     
-    showToast('Приложение загружено. Добро пожаловать!', 'success');
+    showToast('Приложение загружено!', 'success');
+});
+
+// ==========================================
+// СОХРАНЕНИЕ/ЗАГРУЗКА ДАННЫХ
+// ==========================================
+function saveData() {
+    try {
+        localStorage.setItem('financeAppData', JSON.stringify(appData));
+        console.log('✅ Данные сохранены в localStorage');
+    } catch (error) {
+        console.error('❌ Ошибка сохранения:', error);
+    }
 }
 
-// Сохраняем данные перед закрытием приложения
-window.addEventListener('beforeunload', () => {
-    forceSave();
-});
-
-// Сохраняем при потере фокуса (переключение на другое приложение)
-window.addEventListener('blur', () => {
-    forceSave();
-});
-
-// Telegram-специфичное событие закрытия
-tg.onEvent('viewportChanged', () => {
-    if (!tg.isExpanded) {
-        forceSave();
+function loadData() {
+    try {
+        const saved = localStorage.getItem('financeAppData');
+        if (saved) {
+            appData = JSON.parse(saved);
+            console.log('✅ Данные загружены из localStorage');
+        }
+    } catch (error) {
+        console.error('❌ Ошибка загрузки:', error);
     }
-});
-
-// Периодическое автосохранение каждые 30 секунд
-setInterval(() => {
-    if (appData) {
-        forceSave();
-    }
-}, 30000);
+}
 
 // ==========================================
-// УПРАВЛЕНИЕ ВКЛАДКАМИ
+// ВКЛАДКИ
 // ==========================================
-
 function initializeTabs() {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -336,37 +90,24 @@ function initializeTabs() {
         button.addEventListener('click', () => {
             const tabId = button.dataset.tab;
             
-            // Убираем активные классы
             tabButtons.forEach(btn => btn.classList.remove('active'));
             tabContents.forEach(content => content.classList.remove('active'));
             
-            // Активируем нужные элементы
             button.classList.add('active');
             document.getElementById(tabId).classList.add('active');
-            
-            // Специальные действия для вкладок
-            if (tabId === 'analytics') {
-                setTimeout(() => {
-                    updateCharts();
-                }, 100);
-            }
         });
     });
 }
 
 // ==========================================
-// ЗАГРУЗКА НАЧАЛЬНЫХ ДАННЫХ
+// ЗАГРУЗКА ДАННЫХ В ИНТЕРФЕЙС
 // ==========================================
-
 function loadInitialData() {
-    if (!appData) return;
-    
     renderIncomes();
     renderFixedExpenses();
     renderDailyExpenses();
     renderArchive();
     
-    // Устанавливаем значения форм
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     const savingsInput = document.getElementById('savingsPercentage');
@@ -376,5 +117,315 @@ function loadInitialData() {
     if (savingsInput) savingsInput.value = appData.currentPeriod.savingsPercentage;
 }
 
-// Остальные функции остаются без изменений...
-// (addIncome, removeIncome, renderIncomes, addFixedExpense, и т.д.)
+// ==========================================
+// РАСЧЕТЫ
+// ==========================================
+function updateAllCalculations() {
+    const totalIncome = appData.currentPeriod.incomes.reduce((sum, inc) => sum + inc.amount, 0);
+    const totalFixed = appData.currentPeriod.fixedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalSavings = totalIncome * appData.currentPeriod.savingsPercentage / 100;
+    const totalDailyExpenses = appData.currentPeriod.dailyExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalSpent = totalFixed + totalDailyExpenses;
+    const remainingBudget = totalIncome - totalSpent - totalSavings;
+    
+    const startDate = new Date(appData.currentPeriod.startDate);
+    const endDate = new Date(appData.currentPeriod.endDate);
+    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    const dailyBudget = remainingBudget / totalDays;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const todayExpenses = appData.currentPeriod.dailyExpenses.filter(exp => exp.date === today);
+    const todaySpent = todayExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const todayRemaining = dailyBudget - todaySpent;
+    const todayProgress = Math.min((todaySpent / dailyBudget) * 100, 100);
+    
+    updateElement('totalIncome', formatCurrency(totalIncome));
+    updateElement('totalSpent', formatCurrency(totalSpent));
+    updateElement('totalSavings', formatCurrency(totalSavings));
+    updateElement('remainingBudget', formatCurrency(remainingBudget));
+    updateElement('dailyBudget', formatCurrency(dailyBudget));
+    updateElement('todaySpent', formatCurrency(todaySpent));
+    updateElement('todayRemaining', formatCurrency(todayRemaining));
+    
+    const todayProgressBar = document.getElementById('todayProgress');
+    if (todayProgressBar) {
+        todayProgressBar.style.width = `${todayProgress}%`;
+    }
+}
+
+// ==========================================
+// ДОХОДЫ
+// ==========================================
+function addIncome() {
+    const titleInput = document.getElementById('incomeTitle');
+    const amountInput = document.getElementById('incomeAmount');
+    const categorySelect = document.getElementById('incomeCategory');
+    
+    const title = titleInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const category = categorySelect.value;
+    
+    if (!title || !amount || amount <= 0) {
+        showToast('Заполните все поля', 'error');
+        return;
+    }
+    
+    appData.currentPeriod.incomes.push({
+        id: Date.now(),
+        name: title,
+        amount: amount,
+        category: category,
+        date: new Date().toISOString().split('T')[0]
+    });
+    
+    titleInput.value = '';
+    amountInput.value = '';
+    
+    saveData();
+    renderIncomes();
+    updateAllCalculations();
+    showToast(`Доход "${title}" добавлен`, 'success');
+}
+
+function removeIncome(id) {
+    const income = appData.currentPeriod.incomes.find(inc => inc.id === id);
+    if (!income) return;
+    
+    appData.currentPeriod.incomes = appData.currentPeriod.incomes.filter(inc => inc.id !== id);
+    
+    saveData();
+    renderIncomes();
+    updateAllCalculations();
+    showToast(`Доход "${income.name}" удален`, 'success');
+}
+
+function renderIncomes() {
+    const container = document.getElementById('incomeList');
+    if (!container) return;
+    
+    if (appData.currentPeriod.incomes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Нет доходов</p>';
+        return;
+    }
+    
+    container.innerHTML = appData.currentPeriod.incomes.map(income => `
+        <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-weight: bold;">${income.name}</div>
+                <div style="font-size: 12px; color: #999;">${income.category}</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-weight: bold;">${formatCurrency(income.amount)}</span>
+                <button onclick="removeIncome(${income.id})" style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ==========================================
+// ПОСТОЯННЫЕ РАСХОДЫ
+// ==========================================
+function addFixedExpense() {
+    const titleInput = document.getElementById('expenseTitle');
+    const amountInput = document.getElementById('expenseAmount');
+    
+    const title = titleInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    
+    if (!title || !amount || amount <= 0) {
+        showToast('Заполните все поля', 'error');
+        return;
+    }
+    
+    appData.currentPeriod.fixedExpenses.push({
+        id: Date.now(),
+        name: title,
+        amount: amount,
+        date: new Date().toISOString().split('T')[0]
+    });
+    
+    titleInput.value = '';
+    amountInput.value = '';
+    
+    saveData();
+    renderFixedExpenses();
+    updateAllCalculations();
+    showToast(`Расход "${title}" добавлен`, 'success');
+}
+
+function removeFixedExpense(id) {
+    const expense = appData.currentPeriod.fixedExpenses.find(exp => exp.id === id);
+    if (!expense) return;
+    
+    appData.currentPeriod.fixedExpenses = appData.currentPeriod.fixedExpenses.filter(exp => exp.id !== id);
+    
+    saveData();
+    renderFixedExpenses();
+    updateAllCalculations();
+    showToast(`Расход "${expense.name}" удален`, 'success');
+}
+
+function renderFixedExpenses() {
+    const container = document.getElementById('fixedExpensesList');
+    if (!container) return;
+    
+    if (appData.currentPeriod.fixedExpenses.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Нет постоянных расходов</p>';
+        return;
+    }
+    
+    container.innerHTML = appData.currentPeriod.fixedExpenses.map(expense => `
+        <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: bold;">${expense.name}</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-weight: bold;">${formatCurrency(expense.amount)}</span>
+                <button onclick="removeFixedExpense(${expense.id})" style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ==========================================
+// ЕЖЕДНЕВНЫЕ РАСХОДЫ
+// ==========================================
+function addDailyExpense() {
+    const amountInput = document.getElementById('dailyAmount');
+    const descriptionInput = document.getElementById('dailyDescription');
+    const categorySelect = document.getElementById('dailyCategory');
+    
+    const amount = parseFloat(amountInput.value);
+    const description = descriptionInput.value.trim();
+    const category = categorySelect.value;
+    
+    if (!amount || amount <= 0) {
+        showToast('Введите сумму', 'error');
+        return;
+    }
+    
+    appData.currentPeriod.dailyExpenses.push({
+        id: Date.now(),
+        amount: amount,
+        description: description || 'Без описания',
+        category: category,
+        date: new Date().toISOString().split('T')[0]
+    });
+    
+    amountInput.value = '';
+    descriptionInput.value = '';
+    
+    saveData();
+    renderDailyExpenses();
+    updateAllCalculations();
+    showToast(`Расход ${formatCurrency(amount)} добавлен`, 'success');
+}
+
+function removeDailyExpense(id) {
+    appData.currentPeriod.dailyExpenses = appData.currentPeriod.dailyExpenses.filter(exp => exp.id !== id);
+    
+    saveData();
+    renderDailyExpenses();
+    updateAllCalculations();
+    showToast('Расход удален', 'success');
+}
+
+function renderDailyExpenses() {
+    const container = document.getElementById('dailyExpensesList');
+    if (!container) return;
+    
+    if (appData.currentPeriod.dailyExpenses.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Нет ежедневных расходов</p>';
+        return;
+    }
+    
+    const sorted = [...appData.currentPeriod.dailyExpenses].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    container.innerHTML = sorted.map(expense => {
+        const category = appData.categories.find(cat => cat.id === expense.category);
+        const icon = category ? category.icon : '📋';
+        
+        return `
+            <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 24px;">${icon}</span>
+                    <div>
+                        <div style="font-weight: bold;">${expense.description}</div>
+                        <div style="font-size: 12px; color: #999;">${formatDate(expense.date)}</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-weight: bold;">${formatCurrency(expense.amount)}</span>
+                    <button onclick="removeDailyExpense(${expense.id})" style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">🗑️</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ==========================================
+// АРХИВ
+// ==========================================
+function renderArchive() {
+    const container = document.getElementById('archiveList');
+    if (!container) return;
+    
+    if (appData.historicalData.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Нет архивных периодов</p>';
+        return;
+    }
+    
+    container.innerHTML = appData.historicalData.map(period => `
+        <div style="padding: 20px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px;">
+            <h3>${period.title}</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;">
+                <div>
+                    <div style="font-size: 12px; color: #999;">Доход:</div>
+                    <div style="font-weight: bold;">${formatCurrency(period.totalIncome)}</div>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: #999;">Расход:</div>
+                    <div style="font-weight: bold;">${formatCurrency(period.totalExpenses)}</div>
+                </div>
+                <div>
+                    <div style="font-size: 12px; color: #999;">Сбережения:</div>
+                    <div style="font-weight: bold;">${formatCurrency(period.savings)}</div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ==========================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ==========================================
+function updateElement(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: 'RUB',
+        minimumFractionDigits: 0
+    }).format(amount || 0);
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+function showToast(message, type = 'info') {
+    console.log(`[${type}] ${message}`);
+    
+    if (tg.showPopup) {
+        tg.showPopup({
+            title: type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️',
+            message: message
+        });
+    }
+}
+
+// Заглушки для графиков
+function initializeCharts() {}
+function initializeCalendarHeatmap() {}
