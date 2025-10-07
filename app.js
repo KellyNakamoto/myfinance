@@ -101,16 +101,13 @@ let savedData = null;
     }
 })();
 
-let appData = savedData || {
+let appData = savedData ? savedData : {
     currentPeriod: {
         id: "2025_10",
         title: "Октябрь 2025",
         startDate: "2025-10-01",
         endDate: "2025-10-31",
         incomes: [
-            {id: 1, name: "Зарплата", amount: 80000, category: "work", date: "2025-10-01"},
-            {id: 2, name: "Аванс", amount: 40000, category: "work", date: "2025-10-15"},
-            {id: 3, name: "Подработка", amount: 15000, category: "freelance", date: "2025-10-05"}
         ],
         fixedExpenses: [
             {id: 1, category: "housing", name: "Квартира", amount: 25000, icon: "🏠", color: "#FF6B35"},
