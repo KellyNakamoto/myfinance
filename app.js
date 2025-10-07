@@ -334,6 +334,7 @@ function removeIncome(id) {
     renderIncomes();
     updateAllCalculations();
     showToast(`Доход "${income.name}" удален`, 'success');
+autoSave();
 }
 
 function renderIncomes() {
@@ -398,6 +399,7 @@ function removeFixedExpense(id) {
     renderFixedExpenses();
     updateAllCalculations();
     showToast(`Расход "${expense.name}" удален`, 'success');
+autoSave();
 }
 
 function renderFixedExpenses() {
