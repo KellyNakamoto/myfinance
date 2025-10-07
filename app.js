@@ -101,7 +101,7 @@ let savedData = null;
     }
 })();
 
-let appData = savedData ? savedData : {
+let appData = savedData || {
     currentPeriod: {
         id: "2025_10",
         title: "Октябрь 2025",
@@ -109,21 +109,9 @@ let appData = savedData ? savedData : {
         endDate: "2025-10-31",
         incomes: [
         ],
-        fixedExpenses: [
-            {id: 1, category: "housing", name: "Квартира", amount: 25000, icon: "🏠", color: "#FF6B35"},
-            {id: 2, category: "food", name: "Продукты", amount: 20000, icon: "🛒", color: "#4ECDC4"},
-            {id: 3, category: "transport", name: "Транспорт", amount: 8000, icon: "🚗", color: "#45B7D1"},
-            {id: 4, category: "utilities", name: "Интернет", amount: 1500, icon: "📡", color: "#F39C12"}
-        ],
+        fixedExpenses: [],
         savingsPercentage: 20,
-        dailyExpenses: [
-            {id: 1, date: "2025-10-01", amount: 1200, description: "Обед в кафе, кофе", category: "food", predicted: false},
-            {id: 2, date: "2025-10-01", amount: 300, description: "Автобус", category: "transport", predicted: false},
-            {id: 3, date: "2025-10-02", amount: 2500, description: "Продукты в супермаркете", category: "food", predicted: false},
-            {id: 4, date: "2025-10-02", amount: 800, description: "Такси", category: "transport", predicted: false},
-            {id: 5, date: "2025-10-03", amount: 600, description: "Завтрак", category: "food", predicted: false},
-            {id: 6, date: "2025-10-03", amount: 1500, description: "Одежда", category: "shopping", predicted: false}
-        ]
+        dailyExpenses: []
     },
     historicalData: [
         {
