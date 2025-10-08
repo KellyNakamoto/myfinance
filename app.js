@@ -51,8 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTabs();
     loadInitialData();
     updateAllCalculations();
-    
-    showToast('Приложение загружено!', 'success');
+     
 });
 
 // ==========================================
