@@ -443,14 +443,14 @@ function formatDate(dateString) {
 }
 
 function showToast(message, type = 'info') {
+    // Уведомления отключены - только логируем в консоль
     console.log(`[${type}] ${message}`);
-    
-    if (tg.showPopup) {
-        tg.showPopup({
-            title: type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️',
-            message: message
-        });
-    }
+    // if (tg.showPopup) {
+    //     tg.showPopup({
+    //         title: type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️',
+    //         message: message
+    //     });
+    // }
 }
 
 // Заглушки для графиков
