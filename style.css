@@ -831,16 +831,16 @@ body {
   display: flex;
   overflow-x: auto;
   scroll-behavior: smooth;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  /* scrollbar-width: none; */
+ /* -ms-overflow-style: none; */
   position: sticky;
   top: 97px;
   z-index: 99;
 }
 
-.tab-navigation::-webkit-scrollbar {
+/* .tab-navigation::-webkit-scrollbar {
   display: none;
-}
+} */
 
 .tab-btn {
   display: flex;
