@@ -114,6 +114,34 @@ function loadInitialData() {
     if (startDateInput) startDateInput.value = appData.currentPeriod.startDate;
     if (endDateInput) endDateInput.value = appData.currentPeriod.endDate;
     if (savingsInput) savingsInput.value = appData.currentPeriod.savingsPercentage;
+    // Автосохранение процента сбережений
+    if (savingsInput) {
+        savingsInput.addEventListener('input', function() {
+            const newValue = parseFloat(savingsInput.value);
+            if (!isNaN(newValue) && newValue >= 0 && newValue <= 100) {
+                appData.currentPeriod.savingsPercentage = newValue;
+                saveData();
+                updateAllCalculations();
+            }
+        });
+    }
+    
+    // Автосохранение дат периода
+    if (startDateInput) {
+        startDateInput.addEventListener('change', function() {
+            appData.currentPeriod.startDate = startDateInput.value;
+            saveData();
+            updateAllCalculations();
+        });
+    }
+    
+    if (endDateInput) {
+        endDateInput.addEventListener('change', function() {
+            appData.currentPeriod.endDate = endDateInput.value;
+            saveData();
+            updateAllCalculations();
+        });
+    }
 }
 
 // ==========================================
