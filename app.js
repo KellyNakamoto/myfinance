@@ -456,3 +456,66 @@ function showToast(message, type = 'info') {
 // Заглушки для графиков
 function initializeCharts() {}
 function initializeCalendarHeatmap() {}
+// ========================================
+// НАВИГАЦИЯ СО СТРЕЛКАМИ
+// ========================================
+
+function scrollTabs(direction) {
+    const nav = document.querySelector('.tab-navigation');
+    const scrollAmount = 200;
+    
+    if (direction === 'left') {
+        nav.scrollLeft -= scrollAmount;
+    } else {
+        nav.scrollLeft += scrollAmount;
+    }
+    
+    updateScrollButtons();
+}
+
+function updateScrollButtons() {
+    const nav = document.querySelector('.tab-navigation');
+    const leftBtn = document.querySelector('.tab-scroll-left');
+    const rightBtn = document.querySelector('.tab-scroll-right');
+    
+    if (!nav || !leftBtn || !rightBtn) return;
+    
+    if (nav.scrollLeft <= 0) {
+        leftBtn.classList.add('disabled');
+    } else {
+        leftBtn.classList.remove('disabled');
+    }
+    
+    if (nav.scrollLeft >= nav.scrollWidth - nav.clientWidth - 5) {
+        rightBtn.classList.add('disabled');
+    } else {
+        rightBtn.classList.remove('disabled');
+    }
+}
+
+window.addEventListener('scroll', function() {
+    const scrollBtn = document.querySelector('.scroll-to-top');
+    if (!scrollBtn) return;
+    
+    if (window.scrollY > 300) {
+        scrollBtn.classList.add('visible');
+    } else {
+        scrollBtn.classList.remove('visible');
+    }
+});
+
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+// Добавь эти строки в существующую функцию DOMContentLoaded
+// Найди где уже есть document.addEventListener('DOMContentLoaded', ... и внутри добавь:
+updateScrollButtons();
+
+const nav = document.querySelector('.tab-navigation');
+if (nav) {
+    nav.addEventListener('scroll', updateScrollButtons);
+}
