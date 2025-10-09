@@ -328,13 +328,18 @@
                             <input 
                                 type="range" 
                                 id="savingsPercentage" 
-                                min="5" 
+                                min="0" 
                                 max="50" 
                                 value="20" 
-                                class="form-control" 
+                                class="form-control savings-slider" 
                                 oninput="updateSavingsPercentage(this.value)"
                                 onchange="saveSavingsPercentage(this.value)"
                             >
+                            <div class="slider-values">
+                                <span>0%</span>
+                                <span>25%</span>
+                                <span>50%</span>
+                            </div>
                         </div>
                         <div class="savings-progress">
                             <div class="prediction-item">
