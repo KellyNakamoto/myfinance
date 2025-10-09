@@ -2608,6 +2608,55 @@ select.form-control {
     format('woff2');
 }
 ```
+/* Ползунок процента сбережений */
+.savings-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    background: var(--color-secondary);
+    border-radius: var(--radius-full);
+    outline: none;
+    margin: var(--space-16) 0 var(--space-8) 0;
+    cursor: pointer;
+    position: relative;
+}
+
+/* WebKit стили */
+.savings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 24px;
+    width: 24px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    cursor: pointer;
+    border: 3px solid var(--color-surface);
+    box-shadow: var(--shadow-md);
+    transition: all var(--duration-fast) var(--ease-standard);
+}
+
+/* Firefox стили */
+.savings-slider::-moz-range-thumb {
+    height: 24px;
+    width: 24px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    cursor: pointer;
+    border: 3px solid var(--color-surface);
+    box-shadow: var(--shadow-md);
+}
+
+/* Значения под ползунком */
+.slider-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-4);
+    margin-bottom: var(--space-16);
+}
+
 
 The main changes I made to ensure full adherence to the design system:
 
