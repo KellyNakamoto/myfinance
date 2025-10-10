@@ -1,5 +1,6 @@
 // Глобальные переменные и данные приложения
 const STORAGE_KEY = 'myfinance_appData';
+const MS_IN_DAY = 24 * 60 * 60 * 1000;
 let cloudSaveErrorShown = false;
 
 function getTelegramWebApp() {
@@ -48,6 +49,40 @@ function toInputDateString(date) {
         return '';
     }
     return date.toISOString().split('T')[0];
+}
+
+function isValidDate(date) {
+    return date instanceof Date && !Number.isNaN(date.getTime());
+}
+
+function normalizeDate(date) {
+    if (!isValidDate(date)) {
+        return null;
+    }
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+}
+
+function buildDateRange(startDateStr, endDateStr) {
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+
+    if (!isValidDate(start) || !isValidDate(end) || start > end) {
+        return [];
+    }
+
+    const normalizedStart = normalizeDate(start);
+    const normalizedEnd = normalizeDate(end);
+    const days = Math.floor((normalizedEnd - normalizedStart) / MS_IN_DAY) + 1;
+    const range = [];
+
+    for (let i = 0; i < days; i++) {
+        const current = new Date(normalizedStart.getTime() + i * MS_IN_DAY);
+        range.push(toInputDateString(current));
+    }
+
+    return range;
 }
 
 let appData = {
@@ -383,76 +418,85 @@ function loadInitialData() {
 function updateAllCalculations() {
     const totalIncome = appData.currentPeriod.incomes.reduce((sum, income) => sum + income.amount, 0);
     const totalFixed = appData.currentPeriod.fixedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const totalSavings = totalIncome * appData.currentPeriod.savingsPercentage / 100;
     const totalDailyExpenses = appData.currentPeriod.dailyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const totalSavings = totalIncome * appData.currentPeriod.savingsPercentage / 100;
     const totalSpent = totalFixed + totalDailyExpenses;
     const remainingBudget = totalIncome - totalSpent - totalSavings;
-    
-    // Вычисляем дневной бюджет
+
     const startDate = new Date(appData.currentPeriod.startDate);
     const endDate = new Date(appData.currentPeriod.endDate);
-    const totalDaysRaw = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    const totalDays = Number.isFinite(totalDaysRaw) && totalDaysRaw > 0 ? totalDaysRaw : 1;
-    const dailyBudget = remainingBudget / totalDays;
-    
-    // Траты сегодня
-    const today = new Date().toISOString().split('T')[0];
-    const todayExpenses = appData.currentPeriod.dailyExpenses.filter(exp => exp.date === today);
+    const normalizedStart = normalizeDate(startDate);
+    const normalizedEnd = normalizeDate(endDate);
+    const validRange = normalizedStart && normalizedEnd && normalizedStart <= normalizedEnd;
+
+    const totalDaysRaw = validRange ? Math.floor((normalizedEnd - normalizedStart) / MS_IN_DAY) + 1 : 0;
+    const totalDays = totalDaysRaw > 0 ? totalDaysRaw : 1;
+    const dailyBudget = totalDaysRaw > 0 ? remainingBudget / totalDays : 0;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayExpenses = appData.currentPeriod.dailyExpenses.filter(exp => exp.date === todayStr);
     const todaySpent = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const todayRemaining = dailyBudget - todaySpent;
-    let todayProgress;
-    if (dailyBudget <= 0) {
-        todayProgress = 100;
+    const safeDailyBudget = Number.isFinite(dailyBudget) ? dailyBudget : 0;
+    const todayRemaining = safeDailyBudget - todaySpent;
+
+    let todayProgress = 0;
+    if (safeDailyBudget <= 0) {
+        todayProgress = todaySpent > 0 ? 100 : 0;
     } else {
-        const rawProgress = (todaySpent / dailyBudget) * 100;
-        todayProgress = Math.min(Math.max(rawProgress, 0), 100);
+        const rawProgress = (todaySpent / safeDailyBudget) * 100;
+        todayProgress = Math.min(Math.max(rawProgress, 0), 150);
     }
-    
-    // Обновляем UI
+
     updateElement('totalIncome', formatCurrency(totalIncome));
     updateElement('totalSpent', formatCurrency(totalSpent));
     updateElement('totalSavings', formatCurrency(totalSavings));
     updateElement('remainingBudget', formatCurrency(remainingBudget));
-    updateElement('dailyBudget', formatCurrency(dailyBudget));
+    updateElement('dailyBudget', formatCurrency(safeDailyBudget));
     updateElement('todaySpent', formatCurrency(todaySpent));
     updateElement('todayRemaining', formatCurrency(todayRemaining));
-    updateElement('dailyBudgetHint', formatCurrency(dailyBudget));
-    updateElement('dailyBudgetInsight', formatCurrency(dailyBudget));
+    updateElement('dailyBudgetHint', formatCurrency(safeDailyBudget));
+    updateElement('dailyBudgetInsight', formatCurrency(safeDailyBudget));
     updateElement('todayRemainingHint', formatCurrency(todayRemaining));
     updateElement('fixedExpensesTotal', formatCurrency(totalFixed));
     updateElement('dailyExpensesTotal', formatCurrency(totalDailyExpenses));
     updateElement('totalSavingsPlan', formatCurrency(totalSavings));
     updateElement('totalSpentInsight', formatCurrency(totalSpent));
-    
-    // Обновляем прогресс бары
+
     const todayProgressBar = document.getElementById('todayProgress');
     if (todayProgressBar) {
-        todayProgressBar.style.width = `${todayProgress}%`;
-        todayProgressBar.className = `progress-fill ${todayProgress > 100 ? 'error' : todayProgress > 80 ? 'warning' : 'primary'}`;
-    }
-    
-    // Обновляем прогресс сбережений
-    const currentSavings = totalIncome * 0.65 * appData.currentPeriod.savingsPercentage / 100; // Текущие сбережения (65% месяца прошло)
-    const savingsProgress = (currentSavings / totalSavings) * 100;
-    const savingsProgressBar = document.getElementById('savingsProgress');
-    if (savingsProgressBar) {
-        savingsProgressBar.style.width = `${Math.min(savingsProgress, 100)}%`;
+        const clampedProgress = Math.min(todayProgress, 150);
+        todayProgressBar.style.width = `${clampedProgress}%`;
+        todayProgressBar.className = `progress-fill ${clampedProgress > 100 ? 'error' : clampedProgress > 80 ? 'warning' : 'primary'}`;
     }
 
-    const periodTitle = formatPeriodTitle(startDate, endDate);
+    const achievedSavings = Math.max(totalIncome - totalSpent, 0);
+    const savingsProgress = totalSavings > 0 ? Math.min((achievedSavings / totalSavings) * 100, 100) : 0;
+    const savingsProgressBar = document.getElementById('savingsProgress');
+    if (savingsProgressBar) {
+        savingsProgressBar.style.width = `${savingsProgress}%`;
+    }
+
+    const savingsProgressText = document.querySelector('.savings-progress .progress-text');
+    if (savingsProgressText) {
+        savingsProgressText.textContent = `${formatCurrency(achievedSavings)} из ${formatCurrency(totalSavings)}`;
+    }
+
+    const periodTitle = validRange ? formatPeriodTitle(startDate, endDate) : 'Текущий период';
     appData.currentPeriod.title = periodTitle;
     updateElement('currentPeriod', periodTitle);
     updateElement('overviewPeriod', periodTitle);
 
-    const normalizedToday = new Date();
-    normalizedToday.setHours(0, 0, 0, 0);
-    const normalizedEnd = new Date(endDate);
-    normalizedEnd.setHours(0, 0, 0, 0);
-    const msInDay = 1000 * 60 * 60 * 24;
-    let daysLeft = Math.floor((normalizedEnd - normalizedToday) / msInDay) + 1;
-    if (!Number.isFinite(daysLeft) || Number.isNaN(daysLeft) || daysLeft < 0) {
-        daysLeft = 0;
+    let daysLeft = 0;
+    if (validRange) {
+        const normalizedToday = normalizeDate(new Date());
+        if (normalizedToday) {
+            daysLeft = Math.floor((normalizedEnd - normalizedToday) / MS_IN_DAY) + 1;
+            if (daysLeft < 0) {
+                daysLeft = 0;
+            }
+        }
     }
+
     updateElement('daysLeft', daysLeft);
     updateElement('savingsRate', `${appData.currentPeriod.savingsPercentage}%`);
     updateElement('savingsRateHint', `${appData.currentPeriod.savingsPercentage}%`);
@@ -753,27 +797,34 @@ function updateCalendarHeatmap() {
 
     const startDate = new Date(appData.currentPeriod.startDate);
     const endDate = new Date(appData.currentPeriod.endDate);
-    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    
+
+    if (!isValidDate(startDate) || !isValidDate(endDate) || startDate > endDate) {
+        container.innerHTML = '<div class="empty-state">Укажите корректный период</div>';
+        return;
+    }
+
+    const normalizedStart = normalizeDate(startDate);
+    const normalizedEnd = normalizeDate(endDate);
+    const totalDays = Math.floor((normalizedEnd - normalizedStart) / MS_IN_DAY) + 1;
+
     // Группируем расходы по датам
     const dailyTotals = {};
     appData.currentPeriod.dailyExpenses.forEach(expense => {
         if (!dailyTotals[expense.date]) dailyTotals[expense.date] = 0;
         dailyTotals[expense.date] += expense.amount;
     });
-    
+
     // Находим максимальную трату для нормализации
     const maxAmount = Math.max(...Object.values(dailyTotals), 0);
-    
+
     let html = '';
     for (let i = 0; i < totalDays; i++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + i);
+        const currentDate = new Date(normalizedStart.getTime() + i * MS_IN_DAY);
         const dateStr = currentDate.toISOString().split('T')[0];
-        
+
         const amount = dailyTotals[dateStr] || 0;
         const level = maxAmount > 0 ? Math.floor((amount / maxAmount) * 4) : 0;
-        
+
         const dayLabel = amount > 0 ? `${formatDate(currentDate)}: ${formatCurrency(amount)}` : `${formatDate(currentDate)}: Трат не было`;
         const compactAmount = amount > 0 ? formatCompactCurrency(amount) : '—';
 
@@ -795,7 +846,26 @@ function updateCalendarHeatmap() {
     container.innerHTML = html;
 }
 
-function finishCurrentPeriod() {
+async function requestConfirmation(message) {
+    const webApp = getTelegramWebApp();
+    if (webApp && typeof webApp.showConfirm === 'function') {
+        try {
+            return await webApp.showConfirm(message);
+        } catch (error) {
+            console.error('Ошибка подтверждения через Telegram', error);
+            showToast('Не удалось показать подтверждение в Telegram. Попробуйте ещё раз.', 'warning');
+            return false;
+        }
+    }
+
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+        return window.confirm(message);
+    }
+
+    return true;
+}
+
+async function finishCurrentPeriod() {
     const { startDate, endDate, incomes, fixedExpenses, dailyExpenses, savingsPercentage } = appData.currentPeriod;
 
     if (!startDate || !endDate) {
@@ -817,7 +887,8 @@ function finishCurrentPeriod() {
     }
 
     const confirmationMessage = 'Завершить текущий период? Все данные будут перенесены в архив, а текущие списки очистятся.';
-    if (typeof window !== 'undefined' && !window.confirm(confirmationMessage)) {
+    const confirmed = await requestConfirmation(confirmationMessage);
+    if (!confirmed) {
         return;
     }
 
@@ -868,10 +939,9 @@ function finishCurrentPeriod() {
         ...appData.historicalData.filter(period => period.id !== archiveEntry.id)
     ];
 
-    const msInDay = 1000 * 60 * 60 * 24;
-    const periodLength = Math.max(1, Math.floor((end - start) / msInDay) + 1);
-    const nextPeriodStart = new Date(end.getTime() + msInDay);
-    const nextPeriodEnd = new Date(nextPeriodStart.getTime() + (periodLength - 1) * msInDay);
+    const periodLength = Math.max(1, Math.floor((end - start) / MS_IN_DAY) + 1);
+    const nextPeriodStart = new Date(end.getTime() + MS_IN_DAY);
+    const nextPeriodEnd = new Date(nextPeriodStart.getTime() + (periodLength - 1) * MS_IN_DAY);
 
     const nextStartStr = toInputDateString(nextPeriodStart);
     const nextEndStr = toInputDateString(nextPeriodEnd);
@@ -921,46 +991,60 @@ function updateCharts() {
 function initTrendsChart() {
     const ctx = document.getElementById('trendsChart');
     if (!ctx) return;
-    
-    // Подготавливаем данные для трендов
-    const currentMonthData = [];
-    const previousMonthData = [];
+
+    const currentRange = buildDateRange(appData.currentPeriod.startDate, appData.currentPeriod.endDate);
+    const currentTotals = appData.currentPeriod.dailyExpenses.reduce((acc, expense) => {
+        if (!acc[expense.date]) acc[expense.date] = 0;
+        acc[expense.date] += expense.amount;
+        return acc;
+    }, {});
+
+    const lastArchived = appData.historicalData?.[0];
+    const previousTotals = lastArchived?.dailySpending ? { ...lastArchived.dailySpending } : {};
+    const previousDates = Object.keys(previousTotals).sort();
+
+    const maxLength = Math.max(currentRange.length, previousDates.length, 1);
     const labels = [];
-    
-    // Данные текущего месяца
-    for (let i = 1; i <= 31; i++) {
-        const dateStr = `2025-10-${i.toString().padStart(2, '0')}`;
-        const dayExpenses = appData.currentPeriod.dailyExpenses
-            .filter(exp => exp.date === dateStr)
-            .reduce((sum, exp) => sum + exp.amount, 0);
-        
-        currentMonthData.push(dayExpenses);
-        labels.push(i);
+    const currentData = [];
+    const previousData = [];
+
+    for (let i = 0; i < maxLength; i++) {
+        const currentDateStr = currentRange[i];
+        const previousDateStr = previousDates[i];
+        const labelDate = currentDateStr || previousDateStr;
+
+        if (labelDate) {
+            const dateObj = new Date(labelDate);
+            labels.push(isValidDate(dateObj)
+                ? new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(dateObj)
+                : labelDate);
+        } else {
+            labels.push(String(i + 1));
+        }
+
+        currentData.push(currentDateStr ? (currentTotals[currentDateStr] || 0) : 0);
+        previousData.push(previousDateStr ? (previousTotals[previousDateStr] || 0) : 0);
     }
-    
-    // Данные предыдущего месяца
-    const prevMonth = appData.historicalData[0]?.dailySpending || {};
-    for (let i = 1; i <= 30; i++) {
-        const dateStr = `2025-09-${i.toString().padStart(2, '0')}`;
-        previousMonthData.push(prevMonth[dateStr] || 0);
-    }
-    
+
+    const currentLabel = appData.currentPeriod.title || 'Текущий период';
+    const previousLabel = lastArchived?.title || 'Предыдущий период';
+
     window.trendsChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
                 {
-                    label: 'Октябрь 2025',
-                    data: currentMonthData,
+                    label: currentLabel,
+                    data: currentData,
                     borderColor: '#1FB8CD',
                     backgroundColor: 'rgba(31, 184, 205, 0.1)',
                     fill: true,
                     tension: 0.4
                 },
                 {
-                    label: 'Сентябрь 2025',
-                    data: previousMonthData,
+                    label: previousLabel,
+                    data: previousData,
                     borderColor: '#FFC185',
                     backgroundColor: 'rgba(255, 193, 133, 0.1)',
                     fill: true,
@@ -997,7 +1081,7 @@ function initTrendsChart() {
 function initCategoriesChart() {
     const ctx = document.getElementById('categoriesChart');
     if (!ctx) return;
-    
+
     // Подготавливаем данные по категориям
     const categoryTotals = {};
     appData.currentPeriod.dailyExpenses.forEach(expense => {
@@ -1021,6 +1105,11 @@ function initCategoriesChart() {
         data.push(amount);
     });
     
+    if (labels.length === 0) {
+        labels.push('Нет данных');
+        data.push(0);
+    }
+
     window.categoriesChart = new Chart(ctx, {
         type: 'pie',
         data: {
