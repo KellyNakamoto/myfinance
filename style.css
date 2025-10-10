@@ -1121,6 +1121,25 @@ a {
   gap: var(--spacing-sm);
 }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.savings-progress {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
 .form-control,
 select,
 input {
@@ -1148,13 +1167,6 @@ input {
   margin-bottom: 6px;
   font-size: 13px;
   color: var(--text-muted);
-}
-
-.quick-periods {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: var(--spacing-md);
 }
 
 .btn {
@@ -1232,36 +1244,132 @@ input {
 
 .calendar-heatmap {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--spacing-sm);
 }
 
-.calendar-heatmap div {
-  padding-top: 100%;
-  position: relative;
-  border-radius: var(--radius-sm);
+.calendar-day {
+  appearance: none;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  min-height: 90px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition),
+    border var(--transition), background var(--transition),
+    color var(--transition);
+}
+
+.calendar-day__date {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.calendar-day__indicator {
+  align-self: stretch;
+  height: 6px;
+  border-radius: 999px;
   background: var(--accent-muted);
   border: 1px solid var(--border);
+  transition: background var(--transition), border var(--transition);
 }
 
-.calendar-heatmap div[data-level="0"] {
-  background: #f1f0eb;
+.calendar-day__amount {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
-.calendar-heatmap div[data-level="1"] {
-  background: #e8e5da;
+.calendar-day[data-level="0"] {
+  background: var(--surface);
 }
 
-.calendar-heatmap div[data-level="2"] {
-  background: #dcd8c3;
+.calendar-day[data-level="0"] .calendar-day__indicator {
+  background: var(--surface-muted);
+  border-color: var(--border);
 }
 
-.calendar-heatmap div[data-level="3"] {
-  background: #d2ccb3;
+.calendar-day[data-level="0"] .calendar-day__amount {
+  color: var(--text-soft);
 }
 
-.calendar-heatmap div[data-level="4"] {
-  background: #c6be9f;
+.calendar-day[data-level="1"] {
+  background: rgba(85, 97, 255, 0.08);
+  border-color: rgba(85, 97, 255, 0.28);
+}
+
+.calendar-day[data-level="1"] .calendar-day__indicator {
+  background: rgba(85, 97, 255, 0.22);
+  border-color: rgba(85, 97, 255, 0.35);
+}
+
+.calendar-day[data-level="2"] {
+  background: rgba(85, 97, 255, 0.14);
+  border-color: rgba(85, 97, 255, 0.38);
+}
+
+.calendar-day[data-level="2"] .calendar-day__indicator {
+  background: rgba(85, 97, 255, 0.32);
+  border-color: rgba(85, 97, 255, 0.42);
+}
+
+.calendar-day[data-level="3"] {
+  background: rgba(85, 97, 255, 0.18);
+  border-color: rgba(85, 97, 255, 0.48);
+}
+
+.calendar-day[data-level="3"] .calendar-day__indicator {
+  background: rgba(85, 97, 255, 0.45);
+  border-color: rgba(85, 97, 255, 0.5);
+}
+
+.calendar-day[data-level="3"] .calendar-day__amount {
+  color: var(--accent-strong);
+}
+
+.calendar-day[data-level="4"] {
+  background: rgba(85, 97, 255, 0.24);
+  border-color: rgba(85, 97, 255, 0.6);
+}
+
+.calendar-day[data-level="4"] .calendar-day__indicator {
+  background: rgba(85, 97, 255, 0.58);
+  border-color: rgba(85, 97, 255, 0.62);
+}
+
+.calendar-day[data-level="4"] .calendar-day__amount {
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .calendar-day:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px rgba(15, 15, 15, 0.08);
+    border-color: var(--border-strong);
+  }
+}
+
+.calendar-day:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .calendar-heatmap {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
 }
 
 .heatmap-legend {
@@ -1279,10 +1387,31 @@ input {
 }
 
 .legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-sm);
+  width: 26px;
+  height: 12px;
+  border-radius: 999px;
   border: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+
+.legend-color[data-level="1"] {
+  background: rgba(85, 97, 255, 0.08);
+  border-color: rgba(85, 97, 255, 0.28);
+}
+
+.legend-color[data-level="2"] {
+  background: rgba(85, 97, 255, 0.14);
+  border-color: rgba(85, 97, 255, 0.38);
+}
+
+.legend-color[data-level="3"] {
+  background: rgba(85, 97, 255, 0.18);
+  border-color: rgba(85, 97, 255, 0.48);
+}
+
+.legend-color[data-level="4"] {
+  background: rgba(85, 97, 255, 0.24);
+  border-color: rgba(85, 97, 255, 0.6);
 }
 
 .chart-card .card-body {

@@ -739,18 +739,24 @@ function updateCalendarHeatmap() {
         const amount = dailyTotals[dateStr] || 0;
         const level = maxAmount > 0 ? Math.floor((amount / maxAmount) * 4) : 0;
         
+        const dayLabel = amount > 0 ? `${formatDate(currentDate)}: ${formatCurrency(amount)}` : `${formatDate(currentDate)}: Трат не было`;
+        const compactAmount = amount > 0 ? formatCompactCurrency(amount) : '—';
+
         html += `
-            <div class="calendar-day" 
-                 data-level="${level}" 
-                 data-date="${dateStr}" 
-                 data-amount="${amount}"
-                 title="${formatDate(currentDate)}: ${formatCurrency(amount)}"
-                 onclick="showDayDetails('${dateStr}')">
-                ${currentDate.getDate()}
-            </div>
+            <button type="button"
+                class="calendar-day"
+                data-level="${level}"
+                data-date="${dateStr}"
+                data-amount="${amount}"
+                aria-label="${dayLabel}"
+                onclick="showDayDetails('${dateStr}')">
+                <span class="calendar-day__date">${currentDate.getDate()}</span>
+                <span class="calendar-day__indicator" aria-hidden="true"></span>
+                <span class="calendar-day__amount">${compactAmount}</span>
+            </button>
         `;
     }
-    
+
     container.innerHTML = html;
 }
 
@@ -1030,6 +1036,29 @@ function formatCurrency(amount) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount || 0);
+}
+
+function formatCompactCurrency(amount) {
+    if (!amount) return '—';
+
+    const absAmount = Math.abs(amount);
+    let value = amount;
+    let suffix = '';
+
+    if (absAmount >= 1_000_000) {
+        value = amount / 1_000_000;
+        suffix = ' млн';
+    } else if (absAmount >= 1_000) {
+        value = amount / 1_000;
+        suffix = ' тыс';
+    }
+
+    const formattedValue = new Intl.NumberFormat('ru-RU', {
+        minimumFractionDigits: value % 1 === 0 ? 0 : 1,
+        maximumFractionDigits: 1
+    }).format(value);
+
+    return `${formattedValue}${suffix} ₽`;
 }
 
 function formatPeriodTitle(startDate, endDate) {
