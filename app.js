@@ -1,4 +1,20 @@
 // Глобальные переменные и данные приложения
+const STORAGE_KEY = 'myfinance_appData';
+let cloudSaveErrorShown = false;
+
+function getTelegramWebApp() {
+    if (typeof window === 'undefined') return null;
+    const telegram = window.Telegram;
+    if (!telegram || !telegram.WebApp) return null;
+    return telegram.WebApp;
+}
+
+function getTelegramCloudStorage() {
+    const webApp = getTelegramWebApp();
+    if (!webApp) return null;
+    return webApp.CloudStorage || webApp.cloudStorage || null;
+}
+
 let appData = {
     currentPeriod: {
         id: "2025_10",
@@ -93,14 +109,145 @@ let appData = {
     }
 };
 
+async function loadAppDataFromStorage() {
+    const loadedFromCloud = await loadAppDataFromCloudStorage();
+    if (loadedFromCloud) {
+        saveAppDataToLocalStorage();
+        return;
+    }
+    loadAppDataFromLocalStorage();
+}
+
+function mergeAppData(savedData) {
+    if (!savedData || typeof savedData !== 'object') return;
+
+    appData = {
+        ...appData,
+        ...savedData,
+        currentPeriod: {
+            ...appData.currentPeriod,
+            ...(savedData.currentPeriod || {}),
+            incomes: savedData.currentPeriod?.incomes || appData.currentPeriod.incomes,
+            fixedExpenses: savedData.currentPeriod?.fixedExpenses || appData.currentPeriod.fixedExpenses,
+            dailyExpenses: savedData.currentPeriod?.dailyExpenses || appData.currentPeriod.dailyExpenses
+        },
+        historicalData: savedData.historicalData || appData.historicalData,
+        categories: savedData.categories || appData.categories,
+        predictions: savedData.predictions || appData.predictions,
+        patterns: savedData.patterns || appData.patterns
+    };
+}
+
+async function loadAppDataFromCloudStorage() {
+    const cloudStorage = getTelegramCloudStorage();
+    if (!cloudStorage || typeof cloudStorage.getItem !== 'function') {
+        return false;
+    }
+
+    try {
+        const storedValue = await new Promise((resolve, reject) => {
+            cloudStorage.getItem(STORAGE_KEY, (error, value) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(value);
+                }
+            });
+        });
+
+        if (!storedValue) {
+            return false;
+        }
+
+        const savedData = JSON.parse(storedValue);
+        mergeAppData(savedData);
+        return true;
+    } catch (error) {
+        console.error('Ошибка загрузки из облачного хранилища Telegram', error);
+        showToast('Не удалось загрузить данные из облака Telegram.', 'warning');
+        return false;
+    }
+}
+
+function loadAppDataFromLocalStorage() {
+    if (typeof localStorage === 'undefined') {
+        return false;
+    }
+    try {
+        const savedRaw = localStorage.getItem(STORAGE_KEY);
+        if (!savedRaw) return false;
+
+        const savedData = JSON.parse(savedRaw);
+        mergeAppData(savedData);
+        return true;
+    } catch (error) {
+        console.error('Ошибка загрузки сохраненных данных', error);
+        showToast('Не удалось загрузить сохраненные данные. Используются стандартные значения.', 'warning');
+        return false;
+    }
+}
+
+function saveAppData() {
+    saveAppDataToLocalStorage();
+    saveAppDataToCloudStorage().catch(error => {
+        console.error('Ошибка сохранения в облачное хранилище Telegram', error);
+        if (!cloudSaveErrorShown) {
+            showToast('Не удалось сохранить данные в облаке Telegram. Проверьте подключение к интернету.', 'error');
+            cloudSaveErrorShown = true;
+        }
+    });
+}
+
+function saveAppDataToLocalStorage() {
+    if (typeof localStorage === 'undefined') {
+        return false;
+    }
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        return true;
+    } catch (error) {
+        console.error('Ошибка сохранения данных', error);
+        showToast('Не удалось сохранить данные. Проверьте доступное место на устройстве.', 'error');
+        return false;
+    }
+}
+
+function saveAppDataToCloudStorage() {
+    const cloudStorage = getTelegramCloudStorage();
+    if (!cloudStorage || typeof cloudStorage.setItem !== 'function') {
+        return Promise.resolve(false);
+    }
+
+    return new Promise((resolve, reject) => {
+        cloudStorage.setItem(STORAGE_KEY, JSON.stringify(appData), error => {
+            if (error) {
+                reject(error);
+            } else {
+                cloudSaveErrorShown = false;
+                resolve(true);
+            }
+        });
+    });
+}
+
 // Инициализация приложения
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    const webApp = getTelegramWebApp();
+    if (webApp && typeof webApp.ready === 'function') {
+        webApp.ready();
+        if (typeof webApp.expand === 'function') {
+            webApp.expand();
+        }
+    }
+
+    await loadAppDataFromStorage();
     initializeTabs();
     loadInitialData();
     updateAllCalculations();
     initializeCharts();
     initializeCalendarHeatmap();
     showToast('Приложение загружено. Добро пожаловать!', 'success');
+    saveAppData();
 });
 
 // Управление вкладками
@@ -136,11 +283,23 @@ function loadInitialData() {
     renderFixedExpenses();
     renderDailyExpenses();
     renderArchive();
-    
+
     // Устанавливаем значения форм
     document.getElementById('startDate').value = appData.currentPeriod.startDate;
     document.getElementById('endDate').value = appData.currentPeriod.endDate;
-    document.getElementById('savingsPercentage').value = appData.currentPeriod.savingsPercentage;
+
+    const savingsSelect = document.getElementById('savingsPercentage');
+    const savingsValue = String(appData.currentPeriod.savingsPercentage);
+    if (savingsSelect) {
+        const hasValue = Array.from(savingsSelect.options).some(option => option.value === savingsValue);
+        if (!hasValue) {
+            const customOption = document.createElement('option');
+            customOption.value = savingsValue;
+            customOption.textContent = `${appData.currentPeriod.savingsPercentage}% от дохода`;
+            savingsSelect.appendChild(customOption);
+        }
+        savingsSelect.value = savingsValue;
+    }
 }
 
 // Обновление всех расчетов
@@ -222,6 +381,7 @@ function addIncome() {
     renderIncomes();
     updateAllCalculations();
     showToast(`Доход "${title}" добавлен`, 'success');
+    saveAppData();
 }
 
 function removeIncome(id) {
@@ -232,6 +392,7 @@ function removeIncome(id) {
     renderIncomes();
     updateAllCalculations();
     showToast(`Доход "${income.name}" удален`, 'success');
+    saveAppData();
 }
 
 function renderIncomes() {
@@ -286,6 +447,7 @@ function addFixedExpense() {
     renderFixedExpenses();
     updateAllCalculations();
     showToast(`Расход "${title}" добавлен`, 'success');
+    saveAppData();
 }
 
 function removeFixedExpense(id) {
@@ -296,6 +458,7 @@ function removeFixedExpense(id) {
     renderFixedExpenses();
     updateAllCalculations();
     showToast(`Расход "${expense.name}" удален`, 'success');
+    saveAppData();
 }
 
 function renderFixedExpenses() {
@@ -357,6 +520,7 @@ function addDailyExpense() {
     updateAllCalculations();
     updateCalendarHeatmap();
     showToast(`Трата ${formatCurrency(amount)} добавлена в категорию "${getCategoryName(smartCategory)}"`, 'success');
+    saveAppData();
 }
 
 function removeDailyExpense(id) {
@@ -368,6 +532,7 @@ function removeDailyExpense(id) {
     updateAllCalculations();
     updateCalendarHeatmap();
     showToast(`Трата ${formatCurrency(expense.amount)} удалена`, 'success');
+    saveAppData();
 }
 
 function renderDailyExpenses() {
@@ -461,9 +626,10 @@ function setQuickPeriod(type) {
     
     appData.currentPeriod.startDate = startDateStr;
     appData.currentPeriod.endDate = endDateStr;
-    
+
     updateAllCalculations();
     updateCalendarHeatmap();
+    saveAppData();
     showToast(`Период установлен: ${type === 'current' ? 'Этот месяц' : type === 'next' ? 'Следующий месяц' : '3 месяца'}`, 'success');
 }
 
@@ -714,7 +880,11 @@ function editExpense(id) {
     document.getElementById('editAmount').value = expense.amount;
     document.getElementById('editDescription').value = expense.description;
     document.getElementById('editCategory').value = expense.category;
-    
+    const editDateInput = document.getElementById('editDate');
+    if (editDateInput) {
+        editDateInput.value = expense.date;
+    }
+
     document.getElementById('expenseModal').classList.remove('hidden');
 }
 
@@ -727,23 +897,32 @@ function saveExpenseEdit() {
     const amount = parseFloat(document.getElementById('editAmount').value);
     const description = document.getElementById('editDescription').value.trim();
     const category = document.getElementById('editCategory').value;
-    
+    const dateInput = document.getElementById('editDate');
+    const date = dateInput ? dateInput.value : '';
+
     if (!amount || amount <= 0) {
         showToast('Пожалуйста, введите корректную сумму', 'error');
         return;
     }
-    
+
+    if (!date) {
+        showToast('Пожалуйста, выберите дату траты', 'error');
+        return;
+    }
+
     const expense = appData.currentPeriod.dailyExpenses.find(exp => exp.id === id);
     if (expense) {
         expense.amount = amount;
-        expense.description = description;
+        expense.description = description || 'Трата без описания';
         expense.category = category;
-        
+        expense.date = date;
+
         renderDailyExpenses();
         updateAllCalculations();
         updateCalendarHeatmap();
         closeModal();
         showToast('Трата обновлена', 'success');
+        saveAppData();
     }
 }
 
@@ -756,9 +935,10 @@ function updateCalculations() {
     appData.currentPeriod.savingsPercentage = savingsPercentage;
     appData.currentPeriod.startDate = startDate;
     appData.currentPeriod.endDate = endDate;
-    
+
     updateAllCalculations();
     updateCalendarHeatmap();
+    saveAppData();
 }
 
 // Утилиты
