@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>💰 Личные Финансы - Smart Budget</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -61,88 +67,124 @@
         <main class="main-content">
             <!-- Вкладка Обзор -->
             <div class="tab-content active" id="overview">
-                <div class="overview-grid">
-                    <!-- Key Metrics -->
-                    <section class="card metrics-card">
-                        <div class="card-header">
-                            <h2>
-                                <span class="card-icon">📋</span>
-                                Ключевые показатели
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="metrics-grid">
-                                <div class="metric-item positive">
-                                    <div class="metric-label">Общий доход</div>
-                                    <div class="metric-value" id="totalIncome">135 000 ₽</div>
-                                    <div class="metric-change">+8.0%</div>
+                <div class="overview-layout">
+                    <div class="overview-column overview-column--primary">
+                        <section class="card hero-card">
+                            <div class="card-body">
+                                <div class="hero-card__top">
+                                    <div>
+                                        <span class="hero-card__label">Доступно до конца периода</span>
+                                        <div class="hero-card__value" id="remainingBudget">46 800 ₽</div>
+                                    </div>
+                                    <div class="hero-card__meta">
+                                        <span class="hero-chip hero-chip--period" id="overviewPeriod">Октябрь 2025</span>
+                                        <span class="hero-chip hero-chip--countdown">Осталось <strong id="daysLeft">12</strong> дн.</span>
+                                    </div>
                                 </div>
-                                <div class="metric-item negative">
-                                    <div class="metric-label">Расходы</div>
-                                    <div class="metric-value" id="totalSpent">61 200 ₽</div>
-                                    <div class="metric-change">+3.2%</div>
-                                </div>
-                                <div class="metric-item success">
-                                    <div class="metric-label">Сбережения</div>
-                                    <div class="metric-value" id="totalSavings">27 000 ₽</div>
-                                    <div class="metric-change">20%</div>
-                                </div>
-                                <div class="metric-item primary">
-                                    <div class="metric-label">Остаток</div>
-                                    <div class="metric-value" id="remainingBudget">46 800 ₽</div>
-                                    <div class="metric-change">до конца месяца</div>
+                                <div class="hero-card__stats">
+                                    <div class="hero-stat hero-stat--income">
+                                        <span class="hero-stat__label">Общий доход</span>
+                                        <span class="hero-stat__value" id="totalIncome">135 000 ₽</span>
+                                    </div>
+                                    <div class="hero-stat hero-stat--expenses">
+                                        <span class="hero-stat__label">Расходы</span>
+                                        <span class="hero-stat__value" id="totalSpent">61 200 ₽</span>
+                                    </div>
+                                    <div class="hero-stat hero-stat--savings">
+                                        <span class="hero-stat__label">Сбережения</span>
+                                        <span class="hero-stat__value" id="totalSavings">27 000 ₽</span>
+                                        <span class="hero-stat__hint" id="savingsRate">20%</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </section>
+                        </section>
 
-                    <!-- Дневной бюджет -->
-                    <section class="card budget-card">
-                        <div class="card-header">
-                            <h2>
-                                <span class="card-icon">🎯</span>
-                                Дневной бюджет
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="daily-budget-display">
-                                <div class="budget-amount" id="dailyBudget">1 550 ₽</div>
-                                <div class="budget-info">на день</div>
-                            </div>
-                            <div class="budget-progress">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="todayProgress" style="width: 60%"></div>
+                        <section class="card budget-card compact-card">
+                            <div class="card-body">
+                                <div class="daily-budget-summary">
+                                    <div>
+                                        <p class="card-subtitle">Дневной бюджет</p>
+                                        <div class="daily-budget-value" id="dailyBudget">1 550 ₽</div>
+                                        <p class="card-muted">На оставшиеся дни периода</p>
+                                    </div>
+                                    <div class="daily-budget-chip daily-budget-chip--today">
+                                        <span>Сегодня потрачено</span>
+                                        <strong id="todaySpent">930 ₽</strong>
+                                    </div>
                                 </div>
-                                <div class="progress-info">
-                                    <span>Потрачено сегодня: <strong id="todaySpent">930 ₽</strong></span>
-                                    <span>Осталось: <strong id="todayRemaining">620 ₽</strong></span>
+                                <div class="budget-progress">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="todayProgress" style="width: 60%"></div>
+                                    </div>
+                                    <div class="budget-progress-meta">
+                                        <span>Осталось сегодня: <strong id="todayRemaining">620 ₽</strong></span>
+                                        <span>Рекомендация: <strong id="dailyBudgetHint">1 550 ₽</strong></span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </section>
+                        </section>
+                    </div>
 
-                    <!-- Прогноз -->
-                    <section class="card prediction-card">
-                        <div class="card-header">
-                            <h2>
-                                <span class="card-icon">🔮</span>
-                                AI Прогноз
-                            </h2>
-                        </div>
-                        <div class="card-body">
-                            <div class="prediction-item">
-                                <div class="prediction-label">Прогноз трат на конец месяца</div>
-                                <div class="prediction-value">58 000 ₽</div>
-                                <div class="confidence">Уверенность: 85%</div>
-                            </div>
-                            <div class="prediction-recommendation">
-                                <div class="recommendation-icon">💡</div>
-                                <div class="recommendation-text">
-                                    Рекомендуемый дневной бюджет: <strong>1 650 ₽</strong>
+                    <div class="overview-column overview-column--secondary">
+                        <section class="card compact-card quick-metrics-card">
+                            <div class="card-body">
+                                <p class="card-subtitle">Структура расходов</p>
+                                <div class="quick-metrics">
+                                    <div class="quick-metric quick-metric--fixed">
+                                        <span class="quick-metric__label">Обязательные</span>
+                                        <span class="quick-metric__value" id="fixedExpensesTotal">25 000 ₽</span>
+                                    </div>
+                                    <div class="quick-metric quick-metric--daily">
+                                        <span class="quick-metric__label">Ежедневные</span>
+                                        <span class="quick-metric__value" id="dailyExpensesTotal">36 200 ₽</span>
+                                    </div>
+                                    <div class="quick-metric quick-metric--savings">
+                                        <span class="quick-metric__label">План сбережений</span>
+                                        <span class="quick-metric__value" id="totalSavingsPlan">27 000 ₽</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </section>
+                        </section>
+
+                        <section class="card compact-card prediction-card">
+                            <div class="card-body">
+                                <p class="card-subtitle">AI прогноз</p>
+                                <div class="prediction-summary">
+                                    <div>
+                                        <p class="prediction-summary__label">Траты к концу периода</p>
+                                        <p class="prediction-summary__value">58 000 ₽</p>
+                                    </div>
+                                    <span class="confidence-badge confidence-badge--info">85% уверенность</span>
+                                </div>
+                                <div class="recommendation-block recommendation-block--info">
+                                    <div class="recommendation-icon">💡</div>
+                                    <div class="recommendation-text">
+                                        Рекомендуемый дневной бюджет: <strong>1 650 ₽</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="card compact-card insights-card">
+                            <div class="card-body">
+                                <p class="card-subtitle">Быстрые рекомендации</p>
+                                <ul class="insights-list">
+                                    <li class="insight-item insight-item--success">
+                                        <span class="insight-dot insight-dot--success"></span>
+                                        Держите ежедневные траты в пределах <strong id="dailyBudgetInsight">1 550 ₽</strong>.
+                                    </li>
+                                    <li class="insight-item insight-item--warning">
+                                        <span class="insight-dot insight-dot--warning"></span>
+                                        Свободно на сегодня: <strong id="todayRemainingHint">620 ₽</strong>.
+                                    </li>
+                                    <li class="insight-item insight-item--info">
+                                        <span class="insight-dot insight-dot--info"></span>
+                                        Расходы периода: <strong id="totalSpentInsight">61 200 ₽</strong>, сбережения <strong id="savingsRateHint">20%</strong>.
+                                    </li>
+                                </ul>
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </div>
 
@@ -512,6 +554,10 @@
                 <div class="form-group">
                     <label class="form-label">Описание</label>
                     <input type="text" id="editDescription" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Дата</label>
+                    <input type="date" id="editDate" class="form-control">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Категория</label>
