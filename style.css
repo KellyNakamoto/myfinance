@@ -1133,6 +1133,27 @@ a {
   gap: var(--spacing-md);
 }
 
+.planning-actions {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.planning-actions .btn {
+  min-width: 180px;
+}
+
+@media (max-width: 640px) {
+  .planning-actions {
+    justify-content: stretch;
+  }
+
+  .planning-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 .savings-progress {
   margin-top: var(--spacing-lg);
   display: flex;
@@ -1200,6 +1221,19 @@ input {
 .btn--primary:hover {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
+}
+
+.btn--danger {
+  background: rgba(171, 75, 82, 0.1);
+  color: var(--negative);
+  border-color: rgba(171, 75, 82, 0.35);
+}
+
+@media (hover: hover) {
+  .btn--danger:hover {
+    background: rgba(171, 75, 82, 0.16);
+    border-color: rgba(171, 75, 82, 0.45);
+  }
 }
 
 .btn--secondary {

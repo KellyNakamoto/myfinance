@@ -15,6 +15,41 @@ function getTelegramCloudStorage() {
     return webApp.CloudStorage || webApp.cloudStorage || null;
 }
 
+function createEmptyPredictions() {
+    return {
+        endOfMonthSpending: 0,
+        confidenceLevel: 0,
+        recommendedDailyBudget: 0,
+        trendDirection: 'stable',
+        anomalies: []
+    };
+}
+
+function createEmptyPatterns() {
+    return {
+        weekdayVsWeekend: { weekday: 0, weekend: 0 },
+        regularExpenses: [],
+        seasonalTrends: { highest_month: '', lowest_month: '' }
+    };
+}
+
+function generatePeriodId(startDateStr, endDateStr) {
+    if (startDateStr && endDateStr) {
+        return `${startDateStr.replace(/-/g, '')}_${endDateStr.replace(/-/g, '')}`;
+    }
+    if (startDateStr) {
+        return startDateStr.replace(/-/g, '');
+    }
+    return `period_${Date.now()}`;
+}
+
+function toInputDateString(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return '';
+    }
+    return date.toISOString().split('T')[0];
+}
+
 let appData = {
     currentPeriod: {
         id: "2025_10",
@@ -715,7 +750,7 @@ function initializeCalendarHeatmap() {
 function updateCalendarHeatmap() {
     const container = document.getElementById('calendarHeatmap');
     if (!container) return;
-    
+
     const startDate = new Date(appData.currentPeriod.startDate);
     const endDate = new Date(appData.currentPeriod.endDate);
     const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -758,6 +793,118 @@ function updateCalendarHeatmap() {
     }
 
     container.innerHTML = html;
+}
+
+function finishCurrentPeriod() {
+    const { startDate, endDate, incomes, fixedExpenses, dailyExpenses, savingsPercentage } = appData.currentPeriod;
+
+    if (!startDate || !endDate) {
+        showToast('Пожалуйста, укажите даты текущего периода', 'error');
+        return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        showToast('Некорректные даты периода. Проверьте календарь.', 'error');
+        return;
+    }
+
+    if (start > end) {
+        showToast('Дата начала не может быть позже даты окончания', 'error');
+        return;
+    }
+
+    const confirmationMessage = 'Завершить текущий период? Все данные будут перенесены в архив, а текущие списки очистятся.';
+    if (typeof window !== 'undefined' && !window.confirm(confirmationMessage)) {
+        return;
+    }
+
+    const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
+    const totalFixed = fixedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const totalDaily = dailyExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const totalExpenses = totalFixed + totalDaily;
+    const savingsPlanned = totalIncome * (savingsPercentage / 100);
+
+    const categorySpending = {};
+    fixedExpenses.forEach(expense => {
+        const category = expense.category || 'other';
+        if (!categorySpending[category]) categorySpending[category] = 0;
+        categorySpending[category] += expense.amount;
+    });
+    dailyExpenses.forEach(expense => {
+        const category = expense.category || 'other';
+        if (!categorySpending[category]) categorySpending[category] = 0;
+        categorySpending[category] += expense.amount;
+    });
+
+    const dailySpending = dailyExpenses.reduce((acc, expense) => {
+        if (!acc[expense.date]) acc[expense.date] = 0;
+        acc[expense.date] += expense.amount;
+        return acc;
+    }, {});
+
+    const archiveEntry = {
+        id: generatePeriodId(startDate, endDate),
+        title: formatPeriodTitle(new Date(startDate), new Date(endDate)),
+        startDate,
+        endDate,
+        totalIncome,
+        totalExpenses,
+        savings: savingsPlanned,
+        savingsPercentage,
+        categorySpending,
+        dailySpending,
+        incomes: incomes.map(income => ({ ...income })),
+        fixedExpenses: fixedExpenses.map(expense => ({ ...expense })),
+        dailyExpenses: dailyExpenses.map(expense => ({ ...expense })),
+        predictions: JSON.parse(JSON.stringify(appData.predictions || {})),
+        patterns: JSON.parse(JSON.stringify(appData.patterns || {}))
+    };
+
+    appData.historicalData = [
+        archiveEntry,
+        ...appData.historicalData.filter(period => period.id !== archiveEntry.id)
+    ];
+
+    const msInDay = 1000 * 60 * 60 * 24;
+    const periodLength = Math.max(1, Math.floor((end - start) / msInDay) + 1);
+    const nextPeriodStart = new Date(end.getTime() + msInDay);
+    const nextPeriodEnd = new Date(nextPeriodStart.getTime() + (periodLength - 1) * msInDay);
+
+    const nextStartStr = toInputDateString(nextPeriodStart);
+    const nextEndStr = toInputDateString(nextPeriodEnd);
+
+    appData.currentPeriod = {
+        ...appData.currentPeriod,
+        id: generatePeriodId(nextStartStr, nextEndStr),
+        title: formatPeriodTitle(nextPeriodStart, nextPeriodEnd),
+        startDate: nextStartStr,
+        endDate: nextEndStr,
+        incomes: [],
+        fixedExpenses: [],
+        dailyExpenses: []
+    };
+
+    appData.predictions = createEmptyPredictions();
+    appData.patterns = createEmptyPatterns();
+
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    if (startDateInput) startDateInput.value = nextStartStr;
+    if (endDateInput) endDateInput.value = nextEndStr;
+
+    renderIncomes();
+    renderFixedExpenses();
+    renderDailyExpenses();
+    renderArchive();
+    updateAllCalculations();
+    updateCalendarHeatmap();
+    updateCharts();
+
+    saveAppData();
+    showToast('Период завершён. Данные перенесены в архив, начинается новый период.', 'success');
 }
 
 // Графики и аналитика
@@ -913,8 +1060,9 @@ function initCategoriesChart() {
 
 function updateTrendsChart() {
     if (window.trendsChart) {
-        window.trendsChart.update();
+        window.trendsChart.destroy();
     }
+    initTrendsChart();
 }
 
 function updateCategoriesChart() {
