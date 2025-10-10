@@ -929,11 +929,11 @@ function renderArchive() {
     }
     
     container.innerHTML = appData.historicalData.map(period => `
-        <div class="archive-item">
+        <div class="list-item">
             <div class="item-info">
                 <div class="item-name">${period.title}</div>
                 <div class="item-details">
-                    Доходы: ${formatCurrency(period.totalIncome)} | 
+                    Доходы: ${formatCurrency(period.totalIncome)} |
                     Расходы: ${formatCurrency(period.totalExpenses)} |
                     Сбережения: ${formatCurrency(period.savings || 0)}
                 </div>
