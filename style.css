@@ -36,6 +36,10 @@
   --spacing-lg: 20px;
   --spacing-xl: 28px;
   --transition: 180ms ease;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
 }
 
 * {
@@ -64,9 +68,12 @@ a {
 }
 
 .app-container {
-  max-width: 1160px;
+  width: min(100%, 1160px);
   margin: 0 auto;
-  padding: var(--spacing-xl) var(--spacing-lg) 96px;
+  padding: calc(var(--spacing-xl) + var(--safe-top))
+    calc(var(--spacing-lg) + var(--safe-right))
+    calc(96px + var(--safe-bottom))
+    calc(var(--spacing-lg) + var(--safe-left));
 }
 
 .app-header {
@@ -136,6 +143,13 @@ a {
   flex-wrap: wrap;
   padding-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-navigation::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-btn {
@@ -1702,15 +1716,19 @@ input {
   }
 
   .app-container {
-    padding: 24px 16px 80px;
+    padding: calc(24px + var(--safe-top)) calc(16px + var(--safe-right))
+      calc(80px + var(--safe-bottom)) calc(16px + var(--safe-left));
   }
 
   .tab-navigation {
+    flex-wrap: nowrap;
     gap: 6px;
+    padding-bottom: var(--spacing-sm);
   }
 
   .tab-btn {
-    padding: 6px 10px;
+    flex: 0 0 auto;
+    padding: 6px 12px;
   }
 
   .list-item {
@@ -1750,12 +1768,36 @@ input {
     font-size: 20px;
   }
 
+  .card-header,
+  .card-body {
+    padding: var(--spacing-md);
+  }
+
   .hero-card__value {
     font-size: 30px;
   }
 
+  .hero-card__stats {
+    grid-template-columns: 1fr;
+  }
+
   .daily-budget-value {
     font-size: 24px;
+  }
+
+  .expenses-grid,
+  .planning-grid,
+  .analytics-grid {
+    gap: var(--spacing-md);
+  }
+
+  .form-grid,
+  .date-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-heatmap {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   }
 }
 
