@@ -48,7 +48,10 @@ function toInputDateString(date) {
     if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
         return '';
     }
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 function isValidDate(date) {
@@ -449,7 +452,7 @@ function updateAllCalculations() {
 
     const dailyBudget = divisorDays > 0 ? remainingBudget / divisorDays : 0;
 
-    const todayStr = normalizedToday ? normalizedToday.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    const todayStr = normalizedToday ? toInputDateString(normalizedToday) : toInputDateString(new Date());
     const todayExpenses = appData.currentPeriod.dailyExpenses.filter(exp => exp.date === todayStr);
     const todaySpent = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
     const safeDailyBudget = Number.isFinite(dailyBudget) ? dailyBudget : 0;
@@ -530,12 +533,14 @@ function addIncome() {
         return;
     }
     
+    const incomeDate = normalizeDate(new Date());
+
     const newIncome = {
         id: Date.now(),
         name: title,
         amount: amount,
         category: category,
-        date: new Date().toISOString().split('T')[0]
+        date: toInputDateString(incomeDate || new Date())
     };
     
     appData.currentPeriod.incomes.push(newIncome);
@@ -667,9 +672,11 @@ function addDailyExpense() {
     // Smart-категоризация
     const smartCategory = description ? smartCategorize(description) : category;
     
+    const expenseDate = normalizeDate(new Date());
+
     const newExpense = {
         id: Date.now(),
-        date: new Date().toISOString().split('T')[0],
+        date: toInputDateString(expenseDate || new Date()),
         amount: amount,
         description: description || 'Трата без описания',
         category: smartCategory,
@@ -784,8 +791,8 @@ function setQuickPeriod(type) {
             return;
     }
     
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const endDateStr = endDate.toISOString().split('T')[0];
+    const startDateStr = toInputDateString(normalizeDate(startDate));
+    const endDateStr = toInputDateString(normalizeDate(endDate));
     
     document.getElementById('startDate').value = startDateStr;
     document.getElementById('endDate').value = endDateStr;
@@ -833,7 +840,7 @@ function updateCalendarHeatmap() {
     let html = '';
     for (let i = 0; i < totalDays; i++) {
         const currentDate = new Date(normalizedStart.getTime() + i * MS_IN_DAY);
-        const dateStr = currentDate.toISOString().split('T')[0];
+        const dateStr = toInputDateString(normalizeDate(currentDate));
 
         const amount = dailyTotals[dateStr] || 0;
         const level = maxAmount > 0 ? Math.floor((amount / maxAmount) * 4) : 0;
