@@ -1,7 +1,13 @@
 // Глобальные переменные и данные приложения
 const STORAGE_KEY = 'myfinance_appData';
+const REMOTE_SYNC_URL = 'https://tg-finance-api.splendor-410.workers.dev';
+const REMOTE_SYNC_KEY = 'my-super-key-miracle';
+const REMOTE_SYNC_TIMEOUT = 8000;
+const REMOTE_PROFILE_STORAGE_KEY = 'myfinance_remote_profile';
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 let cloudSaveErrorShown = false;
+let remoteSaveErrorShown = false;
+let remoteLoadErrorShown = false;
 
 function getTelegramWebApp() {
     if (typeof window === 'undefined') return null;
@@ -14,6 +20,27 @@ function getTelegramCloudStorage() {
     const webApp = getTelegramWebApp();
     if (!webApp) return null;
     return webApp.CloudStorage || webApp.cloudStorage || null;
+}
+
+function getRemoteProfileId() {
+    const webApp = getTelegramWebApp();
+    const telegramUserId = webApp?.initDataUnsafe?.user?.id;
+    if (telegramUserId) {
+        return `telegram-${telegramUserId}`;
+    }
+
+    if (typeof localStorage === 'undefined') {
+        return 'default-profile';
+    }
+
+    const storedProfile = localStorage.getItem(REMOTE_PROFILE_STORAGE_KEY);
+    if (storedProfile) {
+        return storedProfile;
+    }
+
+    const generatedProfile = `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    localStorage.setItem(REMOTE_PROFILE_STORAGE_KEY, generatedProfile);
+    return generatedProfile;
 }
 
 function createEmptyPredictions() {
@@ -186,11 +213,21 @@ let appData = {
 };
 
 async function loadAppDataFromStorage() {
+    const loadedFromRemote = await loadAppDataFromRemoteStorage();
+    if (loadedFromRemote) {
+        saveAppDataToLocalStorage();
+        saveAppDataToCloudStorage().catch(error => {
+            console.error('Ошибка резервного сохранения в облаке Telegram', error);
+        });
+        return;
+    }
+
     const loadedFromCloud = await loadAppDataFromCloudStorage();
     if (loadedFromCloud) {
         saveAppDataToLocalStorage();
         return;
     }
+
     loadAppDataFromLocalStorage();
 }
 
@@ -216,6 +253,148 @@ function mergeAppData(savedData) {
             ...(savedData.uiState || {})
         }
     };
+}
+
+function isRemoteSyncAvailable() {
+    return typeof fetch === 'function' && typeof REMOTE_SYNC_URL === 'string' && REMOTE_SYNC_URL.length > 0;
+}
+
+async function performRemoteRequest(method, { body, query = {} } = {}) {
+    if (!isRemoteSyncAvailable()) {
+        return null;
+    }
+
+    const profileId = getRemoteProfileId();
+    const url = new URL(REMOTE_SYNC_URL);
+    url.searchParams.set('profile', profileId);
+    Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+            url.searchParams.set(key, value);
+        }
+    });
+
+    const headers = {
+        'X-API-Key': REMOTE_SYNC_KEY,
+        'X-Profile-Id': profileId
+    };
+
+    if (body !== undefined) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const options = {
+        method,
+        headers
+    };
+
+    if (controller) {
+        options.signal = controller.signal;
+    }
+
+    if (body !== undefined) {
+        options.body = JSON.stringify({
+            key: REMOTE_SYNC_KEY,
+            profile: profileId,
+            ...body
+        });
+    }
+
+    let timeoutId = null;
+    if (controller) {
+        timeoutId = setTimeout(() => controller.abort(), REMOTE_SYNC_TIMEOUT);
+    }
+
+    try {
+        const response = await fetch(url.toString(), options);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+        return response;
+    } catch (error) {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+        throw error;
+    }
+}
+
+function extractRemotePayload(data) {
+    if (!data || typeof data !== 'object') {
+        return null;
+    }
+
+    if (data.appData && typeof data.appData === 'object') {
+        return data.appData;
+    }
+
+    if (data.data && typeof data.data === 'object') {
+        return data.data;
+    }
+
+    if (data.payload && typeof data.payload === 'object') {
+        return data.payload;
+    }
+
+    return data;
+}
+
+async function loadAppDataFromRemoteStorage() {
+    if (!isRemoteSyncAvailable()) {
+        return false;
+    }
+
+    try {
+        let response = await performRemoteRequest('GET');
+        if (!response || response.status === 204) {
+            return false;
+        }
+
+        if (response.status === 405 || response.status === 404) {
+            response = await performRemoteRequest('POST', { action: 'read' });
+            if (!response) {
+                return false;
+            }
+        }
+
+        if (!response.ok) {
+            if (!remoteLoadErrorShown) {
+                console.warn('Удалённый сервис вернул ошибку при загрузке', response.status);
+                remoteLoadErrorShown = true;
+            }
+            return false;
+        }
+
+        let payload = null;
+        const contentType = response.headers.get('Content-Type') || '';
+        if (contentType.includes('application/json')) {
+            payload = await response.json();
+        } else {
+            const text = await response.text();
+            try {
+                payload = JSON.parse(text);
+            } catch (error) {
+                console.warn('Не удалось распарсить ответ удалённого сервиса', text);
+                return false;
+            }
+        }
+
+        const savedData = extractRemotePayload(payload);
+        if (!savedData) {
+            return false;
+        }
+
+        mergeAppData(savedData);
+        remoteLoadErrorShown = false;
+        return true;
+    } catch (error) {
+        console.error('Ошибка загрузки данных с удалённого сервиса', error);
+        if (!remoteLoadErrorShown) {
+            showToast('Не удалось синхронизировать данные с облаком. Используются локальные значения.', 'warning');
+            remoteLoadErrorShown = true;
+        }
+        return false;
+    }
 }
 
 async function loadAppDataFromCloudStorage() {
@@ -276,6 +455,13 @@ function saveAppData() {
             cloudSaveErrorShown = true;
         }
     });
+    saveAppDataToRemoteStorage().catch(error => {
+        console.error('Ошибка сохранения в удалённый сервис', error);
+        if (!remoteSaveErrorShown) {
+            showToast('Не удалось синхронизировать данные с облачным сервисом.', 'warning');
+            remoteSaveErrorShown = true;
+        }
+    });
 }
 
 function saveAppDataToLocalStorage() {
@@ -290,6 +476,34 @@ function saveAppDataToLocalStorage() {
         showToast('Не удалось сохранить данные. Проверьте доступное место на устройстве.', 'error');
         return false;
     }
+}
+
+function saveAppDataToRemoteStorage() {
+    if (!isRemoteSyncAvailable()) {
+        return Promise.resolve(false);
+    }
+
+    remoteSaveErrorShown = false;
+    return performRemoteRequest('PUT', { data: appData })
+        .then(async response => {
+            if (!response) {
+                return false;
+            }
+
+            if (response.status === 405 || response.status === 404) {
+                const fallbackResponse = await performRemoteRequest('POST', { action: 'write', data: appData });
+                if (!fallbackResponse || !fallbackResponse.ok) {
+                    throw new Error(`Remote sync fallback failed with status ${fallbackResponse?.status}`);
+                }
+                return true;
+            }
+
+            if (!response.ok) {
+                throw new Error(`Remote sync responded with status ${response.status}`);
+            }
+
+            return true;
+        });
 }
 
 function saveAppDataToCloudStorage() {
