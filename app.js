@@ -430,10 +430,26 @@ function updateAllCalculations() {
     const validRange = normalizedStart && normalizedEnd && normalizedStart <= normalizedEnd;
 
     const totalDaysRaw = validRange ? Math.floor((normalizedEnd - normalizedStart) / MS_IN_DAY) + 1 : 0;
-    const totalDays = totalDaysRaw > 0 ? totalDaysRaw : 1;
-    const dailyBudget = totalDaysRaw > 0 ? remainingBudget / totalDays : 0;
+    const totalDays = totalDaysRaw > 0 ? totalDaysRaw : 0;
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const normalizedToday = normalizeDate(new Date());
+    let divisorDays = totalDays;
+
+    if (validRange && normalizedToday) {
+        if (normalizedToday < normalizedStart) {
+            divisorDays = totalDays;
+        } else if (normalizedToday > normalizedEnd) {
+            divisorDays = 0;
+        } else {
+            const daysElapsed = Math.floor((normalizedToday - normalizedStart) / MS_IN_DAY);
+            const remainingIncludingToday = totalDays - daysElapsed;
+            divisorDays = Math.max(remainingIncludingToday, 1);
+        }
+    }
+
+    const dailyBudget = divisorDays > 0 ? remainingBudget / divisorDays : 0;
+
+    const todayStr = normalizedToday ? normalizedToday.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
     const todayExpenses = appData.currentPeriod.dailyExpenses.filter(exp => exp.date === todayStr);
     const todaySpent = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
     const safeDailyBudget = Number.isFinite(dailyBudget) ? dailyBudget : 0;
@@ -487,13 +503,10 @@ function updateAllCalculations() {
     updateElement('overviewPeriod', periodTitle);
 
     let daysLeft = 0;
-    if (validRange) {
-        const normalizedToday = normalizeDate(new Date());
-        if (normalizedToday) {
-            daysLeft = Math.floor((normalizedEnd - normalizedToday) / MS_IN_DAY) + 1;
-            if (daysLeft < 0) {
-                daysLeft = 0;
-            }
+    if (validRange && normalizedToday) {
+        daysLeft = Math.floor((normalizedEnd - normalizedToday) / MS_IN_DAY) + 1;
+        if (daysLeft < 0) {
+            daysLeft = 0;
         }
     }
 
