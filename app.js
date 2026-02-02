@@ -315,14 +315,14 @@ function updateAllCalculations() {
     const startDate = new Date(appData.currentPeriod.startDate);
     const endDate = new Date(appData.currentPeriod.endDate);
     const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    const dailyBudget = remainingBudget / totalDays;
+    const dailyBudget = totalDays > 0 ? (remainingBudget / totalDays) : 0;
     
     // Траты сегодня
     const today = new Date().toISOString().split('T')[0];
     const todayExpenses = appData.currentPeriod.dailyExpenses.filter(exp => exp.date === today);
     const todaySpent = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
     const todayRemaining = dailyBudget - todaySpent;
-    const todayProgress = Math.min((todaySpent / dailyBudget) * 100, 100);
+    const todayProgress = dailyBudget > 0 ? Math.min((todaySpent / dailyBudget) * 100, 100) : 0;
     
     // Обновляем UI
     updateElement('totalIncome', formatCurrency(totalIncome));
@@ -342,7 +342,7 @@ function updateAllCalculations() {
     
     // Обновляем прогресс сбережений
     const currentSavings = totalIncome * 0.65 * appData.currentPeriod.savingsPercentage / 100; // Текущие сбережения (65% месяца прошло)
-    const savingsProgress = (currentSavings / totalSavings) * 100;
+    const savingsProgress = totalSavings > 0 ? (currentSavings / totalSavings) * 100 : 0;
     const savingsProgressBar = document.getElementById('savingsProgress');
     if (savingsProgressBar) {
         savingsProgressBar.style.width = `${Math.min(savingsProgress, 100)}%`;
@@ -694,6 +694,10 @@ function updateCharts() {
 function initTrendsChart() {
     const ctx = document.getElementById('trendsChart');
     if (!ctx) return;
+    if (typeof Chart === 'undefined') {
+        showToast('Графики недоступны: Chart.js не загружен.', 'warning');
+        return;
+    }
     
     // Подготавливаем данные для трендов
     const currentMonthData = [];
@@ -770,6 +774,10 @@ function initTrendsChart() {
 function initCategoriesChart() {
     const ctx = document.getElementById('categoriesChart');
     if (!ctx) return;
+    if (typeof Chart === 'undefined') {
+        showToast('Графики недоступны: Chart.js не загружен.', 'warning');
+        return;
+    }
     
     // Подготавливаем данные по категориям
     const categoryTotals = {};
