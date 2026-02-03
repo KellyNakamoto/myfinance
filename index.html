@@ -19,7 +19,7 @@
                     <span class="header-icon">💰</span>
                     <div>
                         <h1>Личные Финансы</h1>
-                        <p class="header-subtitle">Smart Budget с ИИ-аналитикой</p>
+                        <p class="header-subtitle">Smart Budget для повседневных целей</p>
                     </div>
                 </div>
                 <div class="header-actions">
@@ -49,7 +49,6 @@
             <button class="tab-btn" data-tab="analytics">
                 <span class="tab-icon">📈</span>
                 <span>Аналитика</span>
-                <span class="tab-badge">AI</span>
             </button>
             <button class="tab-btn" data-tab="archive">
                 <span class="tab-icon">📁</span>
@@ -126,7 +125,7 @@
                         <div class="card-header">
                             <h2>
                                 <span class="card-icon">🔮</span>
-                                AI Прогноз
+                                Прогноз
                             </h2>
                         </div>
                         <div class="card-body">
@@ -161,12 +160,7 @@
                             <div class="form-grid">
                                 <input type="text" placeholder="Источник дохода..." id="incomeTitle" class="form-control">
                                 <input type="number" placeholder="Сумма" id="incomeAmount" class="form-control">
-                                <select id="incomeCategory" class="form-control">
-                                    <option value="work">Работа</option>
-                                    <option value="freelance">Подработка</option>
-                                    <option value="investment">Инвестиции</option>
-                                    <option value="other">Прочее</option>
-                                </select>
+                                <select id="incomeCategory" class="form-control"></select>
                             </div>
                             <button class="btn btn--primary" onclick="addIncome()">
                                 <span>+</span>
@@ -217,14 +211,7 @@
                                 <div class="form-grid">
                                     <input type="number" placeholder="Сумма" id="dailyAmount" class="form-control">
                                     <input type="text" placeholder="Описание..." id="dailyDescription" class="form-control">
-                                    <select id="dailyCategory" class="form-control">
-                                        <option value="food">🍽️ Еда</option>
-                                        <option value="transport">🚗 Транспорт</option>
-                                        <option value="entertainment">🎬 Развлечения</option>
-                                        <option value="shopping">🛍️ Покупки</option>
-                                        <option value="health">⚕️ Здоровье</option>
-                                        <option value="other">📋 Прочее</option>
-                                    </select>
+                                    <select id="dailyCategory" class="form-control"></select>
                                 </div>
                                 <button class="btn btn--primary" onclick="addDailyExpense()">
                                     <span>+</span>
@@ -398,7 +385,7 @@
                         <div class="card-header">
                             <h2>
                                 <span class="card-icon">🧠</span>
-                                AI Инсайты и паттерны
+                                Инсайты и паттерны
                             </h2>
                         </div>
                         <div class="card-body">
@@ -519,14 +506,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Категория</label>
-                    <select id="editCategory" class="form-control">
-                        <option value="food">🍽️ Еда</option>
-                        <option value="transport">🚗 Транспорт</option>
-                        <option value="entertainment">🎬 Развлечения</option>
-                        <option value="shopping">🛍️ Покупки</option>
-                        <option value="health">⚕️ Здоровье</option>
-                        <option value="other">📋 Прочее</option>
-                    </select>
+                    <select id="editCategory" class="form-control"></select>
                 </div>
             </div>
             <div class="modal-footer">
@@ -536,6 +516,7 @@
         </div>
     </div>
 
+    <script src="categories.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

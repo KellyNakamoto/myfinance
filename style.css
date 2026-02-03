@@ -1663,144 +1663,122 @@ body {
   color: var(--color-white);
 }
 
-/* Неоновая тема и карамелизированные кнопки */
+/* Банковский стиль */
 :root {
-  --neon-cyan: #32f6ff;
-  --neon-pink: #ff4fd8;
-  --neon-purple: #7a5cff;
-  --neon-lime: #9dff7a;
-  --neon-blue: #1b6cff;
-  --caramel-light: #ffd6a3;
-  --caramel: #ffb057;
-  --caramel-dark: #c96c2c;
-  --glass-surface: rgba(10, 12, 24, 0.72);
-  --glass-border: rgba(50, 246, 255, 0.35);
+  --bank-primary: #1f4bd6;
+  --bank-primary-dark: #183aa3;
+  --bank-secondary: #eef3ff;
+  --bank-border: rgba(15, 23, 42, 0.12);
+  --bank-surface: #ffffff;
+  --bank-background: #f5f7fb;
+  --bank-text: #0f172a;
+  --bank-text-muted: rgba(15, 23, 42, 0.6);
 
-  --color-background: #06060d;
-  --color-surface: var(--glass-surface);
-  --color-text: #f5f7ff;
-  --color-text-secondary: rgba(207, 214, 255, 0.7);
-  --color-primary: var(--neon-cyan);
-  --color-primary-hover: #6bf8ff;
-  --color-primary-active: #10d7f0;
-  --color-secondary: rgba(122, 92, 255, 0.2);
-  --color-secondary-hover: rgba(122, 92, 255, 0.3);
-  --color-secondary-active: rgba(122, 92, 255, 0.4);
-  --color-border: rgba(50, 246, 255, 0.25);
-  --color-card-border: rgba(50, 246, 255, 0.2);
-  --color-card-border-inner: rgba(122, 92, 255, 0.25);
-  --color-error: #ff6b6b;
-  --color-success: #7dffb3;
-  --color-warning: #ffc857;
-  --color-info: #6fd2ff;
-  --color-focus-ring: rgba(50, 246, 255, 0.45);
-  --color-btn-primary-text: #3b1c00;
+  --color-background: var(--bank-background);
+  --color-surface: var(--bank-surface);
+  --color-text: var(--bank-text);
+  --color-text-secondary: var(--bank-text-muted);
+  --color-primary: var(--bank-primary);
+  --color-primary-hover: #2b5bf0;
+  --color-primary-active: var(--bank-primary-dark);
+  --color-secondary: var(--bank-secondary);
+  --color-secondary-hover: #e1e9ff;
+  --color-secondary-active: #d5e0ff;
+  --color-border: var(--bank-border);
+  --color-card-border: rgba(15, 23, 42, 0.08);
+  --color-card-border-inner: rgba(15, 23, 42, 0.08);
+  --color-btn-primary-text: #ffffff;
+  --color-focus-ring: rgba(31, 75, 214, 0.25);
 }
 
 body {
-  background: radial-gradient(circle at top left, rgba(122, 92, 255, 0.25), transparent 45%),
-    radial-gradient(circle at top right, rgba(50, 246, 255, 0.18), transparent 40%),
-    radial-gradient(circle at 20% 80%, rgba(255, 79, 216, 0.2), transparent 45%),
-    var(--color-background);
+  background: var(--color-background);
 }
 
 .app-header,
 .tab-navigation {
-  background: rgba(6, 6, 13, 0.75);
-  border-color: rgba(50, 246, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(3, 8, 25, 0.35);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .card {
-  background: rgba(10, 12, 24, 0.85);
-  border-color: var(--glass-border);
-  box-shadow: 0 10px 30px rgba(2, 6, 20, 0.45);
+  border-color: var(--color-card-border);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
 }
 
 .card-header {
-  background: linear-gradient(120deg, rgba(50, 246, 255, 0.12), rgba(122, 92, 255, 0.18));
+  background: var(--color-secondary);
 }
 
 .header-icon,
 .card-icon {
-  background: rgba(50, 246, 255, 0.12);
-  border-color: rgba(50, 246, 255, 0.3);
-  box-shadow: 0 0 18px rgba(50, 246, 255, 0.35);
+  background: var(--color-secondary);
+  border-color: var(--color-border);
+  box-shadow: none;
 }
 
 .btn,
 .action-btn {
-  border: 1px solid rgba(255, 176, 87, 0.45);
-  box-shadow: 0 12px 24px rgba(255, 128, 71, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.08);
 }
 
 .btn--primary,
 .action-btn {
-  background: linear-gradient(135deg, var(--caramel-light), var(--caramel), var(--caramel-dark));
-  color: #3b1c00;
+  background: linear-gradient(180deg, #2f62f5 0%, var(--bank-primary) 100%);
+  color: var(--color-btn-primary-text);
 }
 
 .btn--primary:hover,
 .action-btn:hover {
-  background: linear-gradient(135deg, #ffe3c1, #ffc06e, #d17937);
+  background: linear-gradient(180deg, #3b6cf7 0%, #214fdc 100%);
   transform: translateY(-1px);
-  box-shadow: 0 16px 30px rgba(255, 140, 71, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .btn--secondary {
-  background: rgba(122, 92, 255, 0.2);
+  background: var(--color-secondary);
   color: var(--color-text);
-  border: 1px solid rgba(122, 92, 255, 0.5);
-  box-shadow: 0 10px 22px rgba(25, 16, 60, 0.25);
 }
 
 .btn--secondary:hover {
-  background: rgba(122, 92, 255, 0.3);
+  background: var(--color-secondary-hover);
 }
 
 .btn--outline {
-  border: 1px solid rgba(50, 246, 255, 0.5);
+  border: 1px solid var(--color-border);
   color: var(--color-text);
-  background: rgba(10, 12, 24, 0.6);
+  background: var(--color-surface);
 }
 
 .btn--outline:hover {
-  background: rgba(50, 246, 255, 0.15);
-}
-
-.tab-btn {
-  color: rgba(207, 214, 255, 0.75);
+  background: var(--color-secondary);
 }
 
 .tab-btn.active {
-  color: #3b1c00;
-  border-bottom-color: var(--caramel);
-  background: linear-gradient(135deg, var(--caramel-light), var(--caramel));
-  box-shadow: 0 12px 20px rgba(255, 145, 77, 0.35);
-}
-
-.tab-btn:hover {
-  color: var(--color-text);
-  background: rgba(122, 92, 255, 0.2);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: rgba(31, 75, 214, 0.08);
+  box-shadow: inset 0 -2px 0 var(--color-primary);
 }
 
 .form-control {
-  background: rgba(12, 14, 28, 0.85);
-  border-color: rgba(50, 246, 255, 0.25);
+  background: var(--color-surface);
+  border-color: var(--color-border);
   color: var(--color-text);
 }
 
 .form-control:focus {
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 0 2px rgba(50, 246, 255, 0.35);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(31, 75, 214, 0.2);
 }
 
 .progress-bar {
-  background: rgba(122, 92, 255, 0.25);
+  background: rgba(31, 75, 214, 0.12);
 }
 
 .progress-fill {
-  box-shadow: 0 0 18px rgba(50, 246, 255, 0.5);
+  box-shadow: none;
 }
 
 .list-item,
@@ -1810,14 +1788,14 @@ body {
 .archive-item,
 .prediction-recommendation,
 .add-form {
-  background: rgba(10, 12, 24, 0.75);
-  border-color: rgba(50, 246, 255, 0.2);
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .toast {
-  background: rgba(8, 10, 20, 0.9);
-  border-color: rgba(50, 246, 255, 0.2);
-  box-shadow: 0 10px 30px rgba(3, 6, 18, 0.45);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
 }
 
 /* Адаптивность */

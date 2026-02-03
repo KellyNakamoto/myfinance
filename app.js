@@ -15,6 +15,13 @@ function getTelegramCloudStorage() {
     return webApp.CloudStorage || webApp.cloudStorage || null;
 }
 
+const INCOME_CATEGORIES = CATEGORY_CONFIG.filter(category =>
+    category.type === 'income' || category.type === 'shared'
+);
+const EXPENSE_CATEGORIES = CATEGORY_CONFIG.filter(category =>
+    category.type === 'expense' || category.type === 'shared'
+);
+
 let appData = {
     currentPeriod: {
         id: "2025_10",
@@ -77,16 +84,7 @@ let appData = {
             }
         }
     ],
-    categories: [
-        {id: "food", name: "Еда", icon: "🍽️", color: "#FF6B35", keywords: ["кафе", "ресторан", "продукты", "еда", "обед", "завтрак", "ужин"]},
-        {id: "transport", name: "Транспорт", icon: "🚗", color: "#4ECDC4", keywords: ["такси", "автобус", "метро", "бензин", "парковка"]},
-        {id: "entertainment", name: "Развлечения", icon: "🎬", color: "#45B7D1", keywords: ["кино", "концерт", "игры", "развлечения"]},
-        {id: "shopping", name: "Покупки", icon: "🛍️", color: "#F39C12", keywords: ["одежда", "обувь", "техника", "покупки"]},
-        {id: "housing", name: "Жилье", icon: "🏠", color: "#E74C3C", keywords: ["квартира", "аренда", "коммунальные"]},
-        {id: "utilities", name: "Коммунальные", icon: "📡", color: "#9B59B6", keywords: ["интернет", "телефон", "электричество"]},
-        {id: "health", name: "Здоровье", icon: "⚕️", color: "#27AE60", keywords: ["врач", "лекарства", "аптека"]},
-        {id: "other", name: "Прочее", icon: "📋", color: "#95A5A6", keywords: []}
-    ],
+    categories: EXPENSE_CATEGORIES,
     predictions: {
         endOfMonthSpending: 58000,
         confidenceLevel: 0.85,
@@ -132,7 +130,7 @@ function mergeAppData(savedData) {
             dailyExpenses: savedData.currentPeriod?.dailyExpenses || appData.currentPeriod.dailyExpenses
         },
         historicalData: savedData.historicalData || appData.historicalData,
-        categories: savedData.categories || appData.categories,
+        categories: appData.categories,
         predictions: savedData.predictions || appData.predictions,
         patterns: savedData.patterns || appData.patterns
     };
@@ -279,6 +277,7 @@ function initializeTabs() {
 
 // Загрузка начальных данных
 function loadInitialData() {
+    renderCategoryOptions();
     renderIncomes();
     renderFixedExpenses();
     renderDailyExpenses();
@@ -299,6 +298,29 @@ function loadInitialData() {
             savingsSelect.appendChild(customOption);
         }
         savingsSelect.value = savingsValue;
+    }
+}
+
+function renderCategoryOptions() {
+    const incomeSelect = document.getElementById('incomeCategory');
+    if (incomeSelect) {
+        incomeSelect.innerHTML = INCOME_CATEGORIES.map(category => `
+            <option value="${category.id}">${category.icon} ${category.name}</option>
+        `).join('');
+    }
+
+    const expenseOptions = EXPENSE_CATEGORIES.map(category => `
+        <option value="${category.id}">${category.icon} ${category.name}</option>
+    `).join('');
+
+    const dailySelect = document.getElementById('dailyCategory');
+    if (dailySelect) {
+        dailySelect.innerHTML = expenseOptions;
+    }
+
+    const editSelect = document.getElementById('editCategory');
+    if (editSelect) {
+        editSelect.innerHTML = expenseOptions;
     }
 }
 
@@ -585,7 +607,7 @@ function renderDailyExpenses() {
 function smartCategorize(description) {
     const desc = description.toLowerCase();
     
-    for (const category of appData.categories) {
+    for (const category of EXPENSE_CATEGORIES) {
         for (const keyword of category.keywords) {
             if (desc.includes(keyword.toLowerCase())) {
                 return category.id;
@@ -986,12 +1008,12 @@ function escapeHtml(text) {
 }
 
 function getCategoryName(categoryId) {
-    const category = appData.categories.find(cat => cat.id === categoryId);
+    const category = CATEGORY_CONFIG.find(cat => cat.id === categoryId);
     return category ? category.name : 'Прочее';
 }
 
 function getCategoryIcon(categoryId) {
-    const category = appData.categories.find(cat => cat.id === categoryId);
+    const category = CATEGORY_CONFIG.find(cat => cat.id === categoryId);
     return category ? category.icon : '📋';
 }
 
